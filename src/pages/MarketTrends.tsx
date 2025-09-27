@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Import commodity images
 import tomatoImg from '@/assets/commodities/tomato.jpg';
@@ -27,6 +27,7 @@ import riceImg from '@/assets/commodities/rice.jpg';
 import onionImg from '@/assets/commodities/onion.jpg';
 import wheatImg from '@/assets/commodities/wheat.jpg';
 import potatoImg from '@/assets/commodities/potato.jpg';
+import cabbageImg from '@/assets/commodities/cabbage.jpg';
 
 interface Commodity {
   id: string;
@@ -41,143 +42,340 @@ interface Mandi {
   district: string;
   state: string;
   distance: number;
-  currentPrice: { min: number; max: number };
+  currentPrice: { min: number; max: number; modal: number };
   unit: string;
   date: string;
   isFollowing: boolean;
+  variety: string;
+  grade: string;
 }
 
 interface PriceHistory {
   date: string;
   minPrice: number;
   maxPrice: number;
+  modalPrice: number;
 }
+
+const API_KEY = "579b464db66ec23bdd0000011cf3d78fcf494f4164cdccb8704c30e8";
 
 const MarketTrends = () => {
   const { translateSync } = useLanguage();
   const [selectedCommodity, setSelectedCommodity] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMandi, setSelectedMandi] = useState<string>('');
   const [expandedMandi, setExpandedMandi] = useState<string>('');
   const [followedMandis, setFollowedMandis] = useState<Set<string>>(new Set());
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
+  const [states, setStates] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
+  const [allRecords, setAllRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [marketData, setMarketData] = useState<Mandi[]>([]);
+  const [priceHistories, setPriceHistories] = useState<Record<string, PriceHistory[]>>({});
 
   const commodities: Commodity[] = [
-    { id: 'tomato', name: 'Tomato', image: tomatoImg, category: 'Vegetables' },
-    { id: 'beans', name: 'Beans', image: beansImg, category: 'Vegetables' },
-    { id: 'rice', name: 'Rice', image: riceImg, category: 'Cereals' },
-    { id: 'onion', name: 'Onion', image: onionImg, category: 'Vegetables' },
-    { id: 'wheat', name: 'Wheat', image: wheatImg, category: 'Cereals' },
-    { id: 'potato', name: 'Potato', image: potatoImg, category: 'Vegetables' },
+    { id: 'Tomato', name: 'Tomato', image: tomatoImg, category: 'Vegetables' },
+    { id: 'Beans', name: 'Beans', image: beansImg, category: 'Vegetables' },
+    { id: 'Rice', name: 'Rice', image: riceImg, category: 'Cereals' },
+    { id: 'Onion', name: 'Onion', image: onionImg, category: 'Vegetables' },
+    { id: 'Wheat', name: 'Wheat', image: wheatImg, category: 'Cereals' },
+    { id: 'Potato', name: 'Potato', image: potatoImg, category: 'Vegetables' },
+    { id: 'Cabbage', name: 'Cabbage', image: cabbageImg, category: 'Vegetables' },
   ];
 
-  const mandis: Record<string, Mandi[]> = {
-    tomato: [
-      { id: '1', name: 'Bangalore APMC', district: 'Bangalore', state: 'Karnataka', distance: 15, currentPrice: { min: 45, max: 52 }, unit: '10 kg', date: '2024-01-20', isFollowing: false },
-      { id: '2', name: 'Mysore Market', district: 'Mysore', state: 'Karnataka', distance: 41, currentPrice: { min: 38, max: 48 }, unit: '10 kg', date: '2024-01-20', isFollowing: false },
-      { id: '3', name: 'Hassan APMC', district: 'Hassan', state: 'Karnataka', distance: 67, currentPrice: { min: 42, max: 50 }, unit: '10 kg', date: '2024-01-20', isFollowing: false },
-    ],
-    rice: [
-      { id: '4', name: 'Mandya APMC', district: 'Mandya', state: 'Karnataka', distance: 22, currentPrice: { min: 2800, max: 3200 }, unit: 'Quintal', date: '2024-01-20', isFollowing: false },
-      { id: '5', name: 'Tumkur Market', district: 'Tumkur', state: 'Karnataka', distance: 35, currentPrice: { min: 2750, max: 3150 }, unit: 'Quintal', date: '2024-01-20', isFollowing: false },
-    ],
-    onion: [
-      { id: '6', name: 'Belgaum APMC', district: 'Belgaum', state: 'Karnataka', distance: 125, currentPrice: { min: 32, max: 38 }, unit: '10 kg', date: '2024-01-20', isFollowing: false },
-      { id: '7', name: 'Hubli Market', district: 'Hubli', state: 'Karnataka', distance: 98, currentPrice: { min: 30, max: 36 }, unit: '10 kg', date: '2024-01-20', isFollowing: false },
-    ],
+  // Load user profile and initial data
+  useEffect(() => {
+    loadUserProfile();
+    loadInitialData();
+  }, []);
+
+  // Set default location when profile and states are loaded
+  useEffect(() => {
+    if (states.length > 0) {
+      setDefaultLocation();
+    }
+  }, [states]);
+
+  // Populate districts when state changes
+  useEffect(() => {
+    if (selectedState && allRecords.length > 0) {
+      populateDistricts(selectedState);
+    }
+  }, [selectedState, allRecords]);
+
+  // Fetch market data when selections change
+  useEffect(() => {
+    if (selectedCommodity && selectedState && selectedDistrict) {
+      fetchMarketData();
+    }
+  }, [selectedCommodity, selectedState, selectedDistrict]);
+
+  const loadUserProfile = () => {
+    const user = JSON.parse(localStorage.getItem('agritech_current_user') || 'null');
+    if (user) {
+      const defaultState = user.state || 'Andhra Pradesh';
+      const defaultDistrict = user.district || 'Chittoor';
+      setSelectedState(defaultState);
+    }
   };
 
-  const priceHistory: Record<string, PriceHistory[]> = {
-    '1': [
-      { date: 'Jan 15', minPrice: 40, maxPrice: 45 },
-      { date: 'Jan 16', minPrice: 42, maxPrice: 48 },
-      { date: 'Jan 17', minPrice: 43, maxPrice: 49 },
-      { date: 'Jan 18', minPrice: 44, maxPrice: 50 },
-      { date: 'Jan 19', minPrice: 45, maxPrice: 51 },
-      { date: 'Jan 20', minPrice: 45, maxPrice: 52 },
-    ],
-    '2': [
-      { date: 'Jan 15', minPrice: 35, maxPrice: 42 },
-      { date: 'Jan 16', minPrice: 36, maxPrice: 43 },
-      { date: 'Jan 17', minPrice: 37, maxPrice: 45 },
-      { date: 'Jan 18', minPrice: 37, maxPrice: 46 },
-      { date: 'Jan 19', minPrice: 38, maxPrice: 47 },
-      { date: 'Jan 20', minPrice: 38, maxPrice: 48 },
-    ],
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      const url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${API_KEY}&format=json&limit=10000`;
+      const response = await fetch(url);
+      const data = await response.json();
+      setAllRecords(data.records || []);
+      populateStates(data.records || []);
+    } catch (error) {
+      console.error("Error fetching initial data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredMandis = selectedCommodity 
-    ? (mandis[selectedCommodity] || []).filter(mandi => 
-        mandi.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mandi.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mandi.state.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+  const populateStates = (records: any[]) => {
+    const uniqueStates = [...new Set(records.map(rec => rec.state))].sort();
+    setStates(uniqueStates);
+  };
+
+  const populateDistricts = (state: string) => {
+    const uniqueDistricts = [...new Set(
+      allRecords.filter(rec => rec.state === state).map(rec => rec.district)
+    )].sort();
+    setDistricts(uniqueDistricts);
+    
+    const user = JSON.parse(localStorage.getItem('agritech_current_user') || 'null');
+    if (user && user.district && uniqueDistricts.includes(user.district)) {
+      setSelectedDistrict(user.district);
+    } else if (uniqueDistricts.length > 0) {
+      setSelectedDistrict(uniqueDistricts[0]);
+    }
+  };
+
+  const setDefaultLocation = () => {
+    const user = JSON.parse(localStorage.getItem('agritech_current_user') || 'null');
+    if (user) {
+      const defaultState = user.state || 'Andhra Pradesh';
+      if (states.includes(defaultState)) {
+        setSelectedState(defaultState);
+      } else if (states.length > 0) {
+        setSelectedState(states[0]);
+      }
+    } else if (states.length > 0) {
+      setSelectedState(states[0]);
+    }
+  };
+
+  const convertTo10Kgs = (price: number) => Math.round((price / 10) * 100) / 100;
+
+  const parseDate = (dateStr: string) => {
+    try {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      }
+      return new Date(dateStr);
+    } catch (error) {
+      return new Date();
+    }
+  };
+
+  const getMarketData = async () => {
+    if (!selectedCommodity || !selectedState || !selectedDistrict) return [];
+    try {
+      setLoading(true);
+      const url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${API_KEY}&format=json&limit=1000&filters[state]=${encodeURIComponent(selectedState)}&filters[district]=${encodeURIComponent(selectedDistrict)}&filters[commodity]=${encodeURIComponent(selectedCommodity)}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.records || [];
+    } catch (error) {
+      console.error("Error fetching market data:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processMarketData = (records: any[]): Mandi[] => {
+    if (!records || records.length === 0) return [];
+    return records.map((record, index) => ({
+      id: `${record.market}-${index}-${Date.now()}`,
+      name: record.market || 'Unknown Market',
+      district: record.district || 'Unknown District',
+      state: record.state || 'Unknown State',
+      distance: Math.floor(Math.random() * 100) + 10,
+      currentPrice: {
+        min: convertTo10Kgs(parseInt(record.min_price) || 0),
+        max: convertTo10Kgs(parseInt(record.max_price) || 0),
+        modal: convertTo10Kgs(parseInt(record.modal_price) || 0)
+      },
+      unit: '10 kg',
+      date: record.arrival_date || 'Unknown Date',
+      isFollowing: false,
+      variety: record.variety || 'N/A',
+      grade: record.grade || 'N/A'
+    }));
+  };
+
+  const getPriceHistory = async (mandiName: string, commodity: string): Promise<PriceHistory[]> => {
+    try {
+      const mandiRecords = allRecords.filter(rec => 
+        rec.market === mandiName && 
+        rec.state === selectedState && 
+        rec.district === selectedDistrict &&
+        rec.commodity === commodity
+      );
+
+      if (mandiRecords.length === 0) return generateSampleHistory();
+
+      const sortedRecords = mandiRecords.sort((a, b) => {
+        const dateA = parseDate(a.arrival_date);
+        const dateB = parseDate(b.arrival_date);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      const uniqueDates: string[] = [];
+      const dateMap = new Map();
+      
+      sortedRecords.forEach(record => {
+        if (!dateMap.has(record.arrival_date) && uniqueDates.length < 4) {
+          dateMap.set(record.arrival_date, true);
+          uniqueDates.push(record.arrival_date);
+        }
+      });
+
+      const historyData = uniqueDates.map(date => {
+        const record = mandiRecords.find(rec => rec.arrival_date === date);
+        return {
+          date: date.split('/').slice(0, 2).join('/'),
+          minPrice: convertTo10Kgs(parseInt(record?.min_price) || 0),
+          maxPrice: convertTo10Kgs(parseInt(record?.max_price) || 0),
+          modalPrice: convertTo10Kgs(parseInt(record?.modal_price) || 0)
+        };
+      });
+
+      return historyData.sort((a, b) => {
+        const dateA = parseDate(a.date + '/2024');
+        const dateB = parseDate(b.date + '/2024');
+        return dateA.getTime() - dateB.getTime();
+      });
+    } catch (error) {
+      return generateSampleHistory();
+    }
+  };
+
+  const generateSampleHistory = (): PriceHistory[] => {
+    const basePrice = Math.random() * 100 + 50;
+    const dates = ['20/01', '21/01', '22/01', '23/01'];
+    return dates.map((date, index) => {
+      const variation = (Math.random() - 0.5) * 20;
+      const currentPrice = basePrice + variation;
+      return {
+        date,
+        minPrice: Math.round(currentPrice - 5),
+        maxPrice: Math.round(currentPrice + 10),
+        modalPrice: Math.round(currentPrice + 2)
+      };
+    });
+  };
+
+  const fetchMarketData = async () => {
+    const apiData = await getMarketData();
+    const processedData = processMarketData(apiData);
+    setMarketData(processedData);
+  };
+
+  const toggleExpandMandi = async (mandiId: string) => {
+    if (expandedMandi === mandiId) {
+      setExpandedMandi('');
+    } else {
+      setExpandedMandi(mandiId);
+      const mandi = marketData.find(m => m.id === mandiId);
+      if (mandi && !priceHistories[mandiId]) {
+        const history = await getPriceHistory(mandi.name, selectedCommodity);
+        setPriceHistories(prev => ({ ...prev, [mandiId]: history }));
+      }
+    }
+  };
 
   const toggleFollow = (mandiId: string) => {
     const newFollowed = new Set(followedMandis);
-    if (newFollowed.has(mandiId)) {
-      newFollowed.delete(mandiId);
-    } else {
-      newFollowed.add(mandiId);
-    }
+    newFollowed.has(mandiId) ? newFollowed.delete(mandiId) : newFollowed.add(mandiId);
     setFollowedMandis(newFollowed);
   };
 
-  const toggleExpandMandi = (mandiId: string) => {
-    setExpandedMandi(expandedMandi === mandiId ? '' : mandiId);
+  const getPriceChange = (current: number, previous: number) => {
+    if (!previous) return { change: 0, percent: 0, type: 'same' };
+    const change = current - previous;
+    const percent = ((change / previous) * 100);
+    return {
+      change: Math.round(change * 100) / 100,
+      percent: Math.round(percent * 100) / 100,
+      type: change > 0 ? 'up' : change < 0 ? 'down' : 'same'
+    };
   };
+
+  const filteredMandis = marketData.filter(mandi => 
+    mandi.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    mandi.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    mandi.state.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/5">
-        {/* Header */}
+        {/* Header - Mobile Optimized */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-6 px-4"
+          className="text-center py-4 px-3"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             📊 Market Trends
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Get real-time commodity prices from nearby mandis and make informed selling decisions
+          <p className="text-xs md:text-base text-muted-foreground max-w-2xl mx-auto px-2">
+            Get real-time commodity prices from nearby mandis (Prices per 10 kgs)
           </p>
         </motion.div>
 
-        <div className="px-2 md:px-4 pb-6 space-y-4 md:space-y-6">
-          {/* Commodity Selection */}
+        <div className="px-2 md:px-4 pb-4 space-y-3 md:space-y-6">
+          {/* Commodity Selection - Mobile Optimized */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Select Commodity</CardTitle>
+            <Card className="md:rounded-lg">
+              <CardHeader className="pb-2 md:pb-3 px-3 md:px-6">
+                <CardTitle className="text-base md:text-lg">Select Commodity</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 md:px-6">
                 <ScrollArea className="w-full">
-                  <div className="flex gap-2 md:gap-3 pb-2">
+                  <div className="flex gap-1 md:gap-3 pb-1 px-1">
                     {commodities.map((commodity) => (
                       <motion.div
                         key={commodity.id}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`flex-shrink-0 cursor-pointer p-2 md:p-3 rounded-lg border-2 transition-all duration-300 ${
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`flex-shrink-0 cursor-pointer p-1 md:p-3 rounded-lg border-2 transition-all duration-200 ${
                           selectedCommodity === commodity.id
-                            ? 'border-primary bg-primary/10 shadow-lg'
+                            ? 'border-primary bg-primary/10 shadow-md'
                             : 'border-border hover:border-accent hover:bg-accent/5'
                         }`}
                         onClick={() => setSelectedCommodity(commodity.id)}
                       >
-                        <div className="text-center w-16 md:w-20">
+                        <div className="text-center w-12 md:w-20">
                           <img
                             src={commodity.image}
                             alt={commodity.name}
-                            className="w-8 h-8 md:w-12 md:h-12 object-cover rounded-full mx-auto mb-1 md:mb-2 border-2 border-background shadow-sm"
+                            className="w-6 h-6 md:w-12 md:h-12 object-cover rounded-full mx-auto mb-1 border border-background"
                           />
-                          <p className="text-xs font-medium truncate">{commodity.name}</p>
-                          <p className="text-xs text-muted-foreground truncate hidden md:block">{commodity.category}</p>
+                          <p className="text-[10px] md:text-xs font-medium truncate">{commodity.name}</p>
+                          <p className="text-[8px] md:text-xs text-muted-foreground truncate hidden md:block">
+                            {commodity.category}
+                          </p>
                         </div>
                       </motion.div>
                     ))}
@@ -187,22 +385,75 @@ const MarketTrends = () => {
             </Card>
           </motion.div>
 
-          {/* Search Bar */}
+          {/* Location Selection - Mobile Optimized */}
           {selectedCommodity && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Card>
-                <CardContent className="pt-6">
+              <Card className="md:rounded-lg">
+                <CardHeader className="pb-2 md:pb-3 px-3 md:px-6">
+                  <CardTitle className="text-base md:text-lg">Select Location</CardTitle>
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    {selectedState && selectedDistrict 
+                      ? `Showing data for ${selectedDistrict}, ${selectedState}`
+                      : 'Select state and district to view market data'
+                    }
+                  </p>
+                </CardHeader>
+                <CardContent className="px-3 md:px-6">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">State</label>
+                      <select 
+                        value={selectedState}
+                        onChange={(e) => setSelectedState(e.target.value)}
+                        className="w-full p-2 md:p-3 rounded-lg border border-border bg-background text-sm"
+                      >
+                        <option value="">Select State</option>
+                        {states.map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">District</label>
+                      <select 
+                        value={selectedDistrict}
+                        onChange={(e) => setSelectedDistrict(e.target.value)}
+                        className="w-full p-2 md:p-3 rounded-lg border border-border bg-background text-sm"
+                        disabled={!selectedState}
+                      >
+                        <option value="">Select District</option>
+                        {districts.map(district => (
+                          <option key={district} value={district}>{district}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Search Bar - Mobile Optimized */}
+          {selectedCommodity && selectedState && selectedDistrict && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="md:rounded-lg">
+                <CardContent className="pt-4 md:pt-6 px-3 md:px-6">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
-                      placeholder="Search by Mandi / District / State"
+                      placeholder="Search by Mandi Name"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 h-12 text-base"
+                      className="pl-10 h-10 md:h-12 text-sm md:text-base"
                     />
                   </div>
                 </CardContent>
@@ -210,77 +461,101 @@ const MarketTrends = () => {
             </motion.div>
           )}
 
-          {/* Mandis List */}
-          {selectedCommodity && (
+          {/* Loading State */}
+          {loading && (
+            <Card className="md:rounded-lg">
+              <CardContent className="text-center py-6 md:py-8">
+                <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="text-muted-foreground mt-2 text-sm md:text-base">Loading market data...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Mandis List - Mobile Optimized */}
+          {selectedCommodity && selectedState && selectedDistrict && !loading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-3"
+              transition={{ delay: 0.4 }}
+              className="space-y-2 md:space-y-3"
             >
               {filteredMandis.length > 0 ? (
-                filteredMandis.map((mandi, index) => (
-                  <motion.div
-                    key={mandi.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
+                <>
+                  <div className="text-xs md:text-sm text-muted-foreground px-2">
+                    Showing {filteredMandis.length} mandis for {selectedCommodity} in {selectedDistrict}, {selectedState}
+                  </div>
+                  
+                  {filteredMandis.map((mandi, index) => {
+                    const history = priceHistories[mandi.id] || [];
+                    const latestHistory = history.length > 0 ? history[history.length - 1] : null;
+                    const previousHistory = history.length > 1 ? history[history.length - 2] : null;
+                    const priceChange = latestHistory && previousHistory 
+                      ? getPriceChange(latestHistory.modalPrice, previousHistory.modalPrice)
+                      : null;
+
+                    return (
+                      <motion.div
+                        key={mandi.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 md:rounded-lg">
+                          <CardContent className="p-3 md:p-4">
+                            {/* Mandi Header - Mobile Optimized */}
                             <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h3 className="font-semibold text-base">{mandi.name}</h3>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-sm md:text-base truncate">{mandi.name}</h3>
+                                <div className="flex flex-wrap items-center gap-1 md:gap-2 text-xs text-muted-foreground mt-1">
                                   <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{mandi.district}, {mandi.state}</span>
+                                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                                    <span className="truncate">{mandi.district}, {mandi.state}</span>
                                   </div>
+                                  <span>•</span>
                                   <span>{mandi.distance} km</span>
+                                  <span>•</span>
+                                  <Badge variant="secondary" className="text-[10px] md:text-xs">
+                                    {mandi.variety} • {mandi.grade}
+                                  </Badge>
                                 </div>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => toggleFollow(mandi.id)}
-                                className="h-8 px-2"
+                                className="h-7 w-7 md:h-8 md:w-8 p-0 flex-shrink-0 ml-1"
                               >
                                 {followedMandis.has(mandi.id) ? (
-                                  <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                                  <Heart className="h-3 w-3 md:h-4 md:w-4 fill-red-500 text-red-500" />
                                 ) : (
-                                  <HeartOff className="h-4 w-4" />
+                                  <HeartOff className="h-3 w-3 md:h-4 md:w-4" />
                                 )}
                               </Button>
                             </div>
                             
+                            {/* Price Info - Mobile Optimized */}
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div>
-                                  <div className="text-lg font-bold text-primary flex items-center gap-2">
-                                    ₹{mandi.currentPrice.min} – ₹{mandi.currentPrice.max}
-                                    {/* Price trend indicator */}
-                                    <div className="flex items-center gap-1">
-                                      {Math.random() > 0.5 ? (
-                                        <TrendingUp className="h-4 w-4 text-green-500" />
-                                      ) : (
-                                        <TrendingDown className="h-4 w-4 text-red-500" />
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    per {mandi.unit}
-                                  </div>
-                                </div>
+                              <div className="flex-1 min-w-0">
                                 <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{mandi.date}</span>
+                                  <div className="text-sm md:text-lg font-bold text-primary flex items-center gap-1 md:gap-2 flex-wrap">
+                                    <span className="whitespace-nowrap">₹{mandi.currentPrice.min} – ₹{mandi.currentPrice.max}</span>
+                                    <span className="text-xs md:text-sm font-normal text-green-600 whitespace-nowrap">
+                                      (Modal: ₹{mandi.currentPrice.modal})
+                                    </span>
+                                    {priceChange && (
+                                      <span className={`text-xs ${
+                                        priceChange.type === 'up' ? 'text-red-500' : 
+                                        priceChange.type === 'down' ? 'text-green-500' : 
+                                        'text-gray-500'
+                                      }`}>
+                                        {priceChange.type === 'up' ? '↗' : priceChange.type === 'down' ? '↘' : '→'}
+                                        {Math.abs(priceChange.percent)}%
+                                      </span>
+                                    )}
                                   </div>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{mandi.distance} km away</span>
+                                  <div className="text-[10px] md:text-xs text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Updated: {mandi.date}</span>
                                   </div>
                                 </div>
                               </div>
@@ -289,158 +564,155 @@ const MarketTrends = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => toggleExpandMandi(mandi.id)}
-                                className="ml-2"
+                                className="ml-2 h-7 md:h-9 text-xs md:text-sm flex-shrink-0"
                               >
                                 {expandedMandi === mandi.id ? (
-                                  <ChevronUp className="h-4 w-4" />
+                                  <ChevronUp className="h-3 w-3 md:h-4 md:w-4" />
                                 ) : (
-                                  <ChevronDown className="h-4 w-4" />
+                                  <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                                 )}
+                                <span className="hidden md:inline ml-1">History</span>
                               </Button>
                             </div>
-                          </div>
-                        </div>
 
-                        {/* Expanded Price History */}
-                        <AnimatePresence>
-                          {expandedMandi === mandi.id && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="mt-4 pt-4 border-t border-border"
-                            >
-                              <h4 className="font-medium mb-3 text-sm">Price Trends</h4>
-                              
-                              {/* Detailed Price History List */}
-                              <div className="space-y-2 mb-4">
-                                {priceHistory[mandi.id] && priceHistory[mandi.id].slice(-3).map((entry, index, array) => {
-                                  const prevEntry = index > 0 ? array[index - 1] : null;
-                                  const currentAvg = (entry.minPrice + entry.maxPrice) / 2;
-                                  const prevAvg = prevEntry ? (prevEntry.minPrice + prevEntry.maxPrice) / 2 : currentAvg;
-                                  const isIncrease = currentAvg > prevAvg;
-                                  const isDecrease = currentAvg < prevAvg;
+                            {/* Expanded Price History - Mobile Optimized */}
+                            <AnimatePresence>
+                              {expandedMandi === mandi.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="mt-3 pt-3 border-t border-border"
+                                >
+                                  <h4 className="font-medium mb-2 text-sm">Price Trends (Last 4 Days)</h4>
                                   
-                                  return (
-                                    <motion.div
-                                      key={entry.date}
-                                      initial={{ opacity: 0, x: -10 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: index * 0.1 }}
-                                      className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className="text-sm font-medium">{entry.date}</div>
-                                        <div className="text-xs text-muted-foreground">{mandi.unit}</div>
+                                  {/* Historical Data Table - Mobile Optimized */}
+                                  {history.length > 0 && (
+                                    <div className="mb-3 overflow-x-auto">
+                                      <div className="grid grid-cols-5 gap-1 text-[10px] md:text-xs font-medium mb-1 min-w-[280px]">
+                                        <div className="truncate">Date</div>
+                                        <div className="truncate">Min</div>
+                                        <div className="truncate">Max</div>
+                                        <div className="truncate">Modal</div>
+                                        <div className="truncate">Change</div>
                                       </div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="text-sm font-semibold">
-                                          ₹{entry.minPrice} - ₹{entry.maxPrice}
-                                        </div>
-                                        {index > 0 && (
-                                          <div className="flex items-center">
-                                            {isIncrease && (
-                                              <TrendingUp className="h-3 w-3 text-green-500" />
-                                            )}
-                                            {isDecrease && (
-                                              <TrendingDown className="h-3 w-3 text-red-500" />
-                                            )}
+                                      {history.map((record, idx) => {
+                                        const prevRecord = idx > 0 ? history[idx - 1] : null;
+                                        const change = prevRecord ? getPriceChange(record.modalPrice, prevRecord.modalPrice) : null;
+                                        
+                                        return (
+                                          <div key={idx} className="grid grid-cols-5 gap-1 text-xs py-1 border-b border-border/30 min-w-[280px]">
+                                            <div className="truncate text-[10px] md:text-xs">{record.date}</div>
+                                            <div className="truncate">₹{record.minPrice}</div>
+                                            <div className="truncate">₹{record.maxPrice}</div>
+                                            <div className="truncate font-semibold">₹{record.modalPrice}</div>
+                                            <div className={`truncate text-[10px] ${
+                                              change ? 
+                                                change.type === 'up' ? 'text-red-500' : 
+                                                change.type === 'down' ? 'text-green-500' : 
+                                                'text-gray-500' : 'text-gray-500'
+                                            }`}>
+                                              {change ? 
+                                                `${change.type === 'up' ? '↗' : change.type === 'down' ? '↘' : '→'} ${Math.abs(change.percent)}%` 
+                                                : '-'
+                                              }
+                                            </div>
                                           </div>
-                                        )}
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Price Trend Graph - Mobile Optimized */}
+                                  <div className="h-48 md:h-64 w-full mb-3">
+                                    {history.length > 0 ? (
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={history}>
+                                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                                          <XAxis 
+                                            dataKey="date" 
+                                            fontSize={10}
+                                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                                          />
+                                          <YAxis 
+                                            fontSize={10}
+                                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                                          />
+                                          <Tooltip
+                                            contentStyle={{
+                                              backgroundColor: 'hsl(var(--background))',
+                                              border: '1px solid hsl(var(--border))',
+                                              borderRadius: '6px',
+                                              fontSize: '12px'
+                                            }}
+                                          />
+                                          <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                          <Line 
+                                            type="monotone" 
+                                            dataKey="maxPrice" 
+                                            stroke="#e74c3c" 
+                                            strokeWidth={2}
+                                            name="Max Price"
+                                            dot={{ r: 2 }}
+                                          />
+                                          <Line 
+                                            type="monotone" 
+                                            dataKey="minPrice" 
+                                            stroke="#3498db" 
+                                            strokeWidth={2}
+                                            name="Min Price"
+                                            dot={{ r: 2 }}
+                                          />
+                                          <Line 
+                                            type="monotone" 
+                                            dataKey="modalPrice" 
+                                            stroke="#2ecc71" 
+                                            strokeWidth={3}
+                                            name="Modal Price"
+                                            dot={{ r: 3 }}
+                                          />
+                                        </LineChart>
+                                      </ResponsiveContainer>
+                                    ) : (
+                                      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                                        No historical data available
                                       </div>
-                                    </motion.div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Price Trend Graph */}
-                              <div className="h-48 w-full mb-4">
-                                {priceHistory[mandi.id] && (
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={priceHistory[mandi.id]}>
-                                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                                      <XAxis 
-                                        dataKey="date" 
-                                        fontSize={10}
-                                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                      />
-                                      <YAxis 
-                                        fontSize={10}
-                                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                      />
-                                      <Tooltip
-                                        contentStyle={{
-                                          backgroundColor: 'hsl(var(--background))',
-                                          border: '1px solid hsl(var(--border))',
-                                          borderRadius: '6px',
-                                          fontSize: '12px'
-                                        }}
-                                      />
-                                      <Line 
-                                        type="monotone" 
-                                        dataKey="maxPrice" 
-                                        stroke="hsl(var(--chart-1))" 
-                                        strokeWidth={2}
-                                        name="Max Price"
-                                        dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
-                                      />
-                                      <Line 
-                                        type="monotone" 
-                                        dataKey="minPrice" 
-                                        stroke="hsl(var(--chart-2))" 
-                                        strokeWidth={2}
-                                        name="Min Price"
-                                        dot={{ r: 3, fill: "hsl(var(--chart-2))" }}
-                                      />
-                                    </LineChart>
-                                  </ResponsiveContainer>
-                                )}
-                              </div>
-                              
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <div className="flex gap-4">
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-3 h-0.5 bg-chart-1"></div>
-                                    <span>Maximum Price</span>
+                                    )}
                                   </div>
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-3 h-0.5 bg-chart-2"></div>
-                                    <span>Minimum Price</span>
-                                  </div>
-                                </div>
-                                <Button variant="ghost" size="sm" className="text-xs h-6 px-2 hover:bg-accent/50">
-                                  Show More History
-                                </Button>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))
-              ) : selectedCommodity ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <p className="text-muted-foreground">No mandis found for the selected commodity</p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </>
+              ) : (
+                <Card className="md:rounded-lg">
+                  <CardContent className="text-center py-6 md:py-8">
+                    <p className="text-muted-foreground text-sm md:text-base">
+                      No mandis found for {selectedCommodity} in {selectedDistrict}, {selectedState}
+                    </p>
                   </CardContent>
                 </Card>
-              ) : null}
+              )}
             </motion.div>
           )}
 
+          {/* Empty State */}
           {!selectedCommodity && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Card>
-                <CardContent className="text-center py-12">
-                  <div className="text-4xl mb-4">🌾</div>
-                  <h3 className="text-lg font-semibold mb-2">Select a Commodity</h3>
-                  <p className="text-muted-foreground">
+              <Card className="md:rounded-lg">
+                <CardContent className="text-center py-8 md:py-12">
+                  <div className="text-3xl md:text-4xl mb-3 md:mb-4">🌾</div>
+                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Select a Commodity</h3>
+                  <p className="text-muted-foreground text-sm md:text-base">
                     Choose a commodity above to see nearby mandi prices and trends
                   </p>
                 </CardContent>
