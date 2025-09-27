@@ -351,36 +351,32 @@ const MarketTrends = () => {
               <CardHeader className="pb-2 md:pb-3 px-3 md:px-6">
                 <CardTitle className="text-base md:text-lg">Select Commodity</CardTitle>
               </CardHeader>
-              <CardContent className="px-2 md:px-6">
-                <ScrollArea className="w-full">
-                  <div className="flex gap-1 md:gap-3 pb-1 px-1">
-                    {commodities.map((commodity) => (
-                      <motion.div
-                        key={commodity.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`flex-shrink-0 cursor-pointer p-1 md:p-3 rounded-lg border-2 transition-all duration-200 ${
-                          selectedCommodity === commodity.id
-                            ? 'border-primary bg-primary/10 shadow-md'
-                            : 'border-border hover:border-accent hover:bg-accent/5'
-                        }`}
-                        onClick={() => setSelectedCommodity(commodity.id)}
-                      >
-                        <div className="text-center w-12 md:w-20">
-                          <img
-                            src={commodity.image}
-                            alt={commodity.name}
-                            className="w-6 h-6 md:w-12 md:h-12 object-cover rounded-full mx-auto mb-1 border border-background"
-                          />
-                          <p className="text-[10px] md:text-xs font-medium truncate">{commodity.name}</p>
-                          <p className="text-[8px] md:text-xs text-muted-foreground truncate hidden md:block">
-                            {commodity.category}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </ScrollArea>
+              <CardContent className="px-3 md:px-6">
+                <div className="flex flex-wrap gap-2 md:gap-3">
+                  {commodities.map((commodity) => (
+                    <motion.div
+                      key={commodity.id}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`flex-shrink-0 cursor-pointer p-2 rounded-lg border-2 transition-all duration-300 ${
+                        selectedCommodity === commodity.id
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-border hover:border-accent hover:bg-accent/5'
+                      }`}
+                      onClick={() => setSelectedCommodity(commodity.id)}
+                    >
+                      <div className="text-center w-16 sm:w-20">
+                        <img
+                          src={commodity.image}
+                          alt={commodity.name}
+                          className="w-8 h-8 sm:w-12 sm:h-12 object-cover rounded-full mx-auto mb-1 sm:mb-2 border-2 border-background shadow-sm"
+                        />
+                        <p className="text-xs font-medium truncate">{commodity.name}</p>
+                        <p className="text-xs text-muted-foreground truncate hidden sm:block">{commodity.category}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -403,7 +399,7 @@ const MarketTrends = () => {
                   </p>
                 </CardHeader>
                 <CardContent className="px-3 md:px-6">
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-medium mb-1 block">State</label>
                       <select 
@@ -502,18 +498,17 @@ const MarketTrends = () => {
                       >
                         <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 md:rounded-lg">
                           <CardContent className="p-3 md:p-4">
-                            {/* Mandi Header - Mobile Optimized */}
-                            <div className="flex items-start justify-between mb-2">
+                            <div className="flex flex-col sm:flex-row items-start justify-between mb-2">
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-sm md:text-base truncate">{mandi.name}</h3>
-                                <div className="flex flex-wrap items-center gap-1 md:gap-2 text-xs text-muted-foreground mt-1">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mt-1">
                                   <div className="flex items-center gap-1">
                                     <MapPin className="h-3 w-3 flex-shrink-0" />
                                     <span className="truncate">{mandi.district}, {mandi.state}</span>
                                   </div>
-                                  <span>•</span>
-                                  <span>{mandi.distance} km</span>
-                                  <span>•</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="hidden sm:inline">{mandi.distance} km</span>
+                                  <span className="hidden sm:inline">•</span>
                                   <Badge variant="secondary" className="text-[10px] md:text-xs">
                                     {mandi.variety} • {mandi.grade}
                                   </Badge>
@@ -523,7 +518,7 @@ const MarketTrends = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => toggleFollow(mandi.id)}
-                                className="h-7 w-7 md:h-8 md:w-8 p-0 flex-shrink-0 ml-1"
+                                className="h-7 w-7 md:h-8 md:w-8 p-0 flex-shrink-0 ml-1 self-center sm:self-start"
                               >
                                 {followedMandis.has(mandi.id) ? (
                                   <Heart className="h-3 w-3 md:h-4 md:w-4 fill-red-500 text-red-500" />
@@ -533,8 +528,7 @@ const MarketTrends = () => {
                               </Button>
                             </div>
                             
-                            {/* Price Info - Mobile Optimized */}
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row items-end justify-between">
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-col gap-1">
                                   <div className="text-sm md:text-lg font-bold text-primary flex items-center gap-1 md:gap-2 flex-wrap">
@@ -543,12 +537,12 @@ const MarketTrends = () => {
                                       (Modal: ₹{mandi.currentPrice.modal})
                                     </span>
                                     {priceChange && (
-                                      <span className={`text-xs ${
+                                      <span className={`text-xs font-semibold inline-flex items-center gap-1 ${
                                         priceChange.type === 'up' ? 'text-red-500' : 
                                         priceChange.type === 'down' ? 'text-green-500' : 
                                         'text-gray-500'
                                       }`}>
-                                        {priceChange.type === 'up' ? '↗' : priceChange.type === 'down' ? '↘' : '→'}
+                                        {priceChange.type === 'up' ? <TrendingUp className="h-3 w-3"/> : <TrendingDown className="h-3 w-3"/>}
                                         {Math.abs(priceChange.percent)}%
                                       </span>
                                     )}
@@ -564,7 +558,7 @@ const MarketTrends = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => toggleExpandMandi(mandi.id)}
-                                className="ml-2 h-7 md:h-9 text-xs md:text-sm flex-shrink-0"
+                                className="ml-2 h-7 md:h-9 text-xs md:text-sm flex-shrink-0 mt-2 sm:mt-0"
                               >
                                 {expandedMandi === mandi.id ? (
                                   <ChevronUp className="h-3 w-3 md:h-4 md:w-4" />
