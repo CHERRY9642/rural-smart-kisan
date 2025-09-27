@@ -19,6 +19,8 @@ const signupSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+  state: z.string().min(2, 'State must be at least 2 characters'),
+  district: z.string().min(2, 'District must be at least 2 characters'),
   language: z.string().min(1, 'Please select a language'),
   plan: z.string().min(1, 'Please select a plan'),
   role: z.string().min(1, 'Please select a role'),
@@ -84,6 +86,8 @@ const Signup = () => {
       password: '',
       confirmPassword: '',
       phone: '',
+      state: '',
+      district: '',
       language: 'en',
       plan: '',
     },
@@ -118,7 +122,7 @@ const Signup = () => {
   const nextStep = () => {
     if (step === 'profile') {
       // Validate profile fields
-      form.trigger(['name', 'email', 'password', 'confirmPassword', 'phone', 'language']).then((isValid) => {
+      form.trigger(['name', 'email', 'password', 'confirmPassword', 'phone', 'state', 'district', 'language']).then((isValid) => {
         if (isValid) setStep('plan');
       });
     }
@@ -232,6 +236,42 @@ const Signup = () => {
                             <Input 
                               placeholder={translateSync("Enter your phone number")}
                               type="tel"
+                              className="h-12"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{translateSync("State")}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder={translateSync("Enter your state")}
+                              className="h-12"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="district"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{translateSync("District")}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder={translateSync("Enter your district")}
                               className="h-12"
                               {...field} 
                             />

@@ -19,6 +19,8 @@ const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+  state: z.string().min(2, 'State must be at least 2 characters'),
+  district: z.string().min(2, 'District must be at least 2 characters'),
   language: z.string().min(1, 'Please select a language'),
 });
 
@@ -43,6 +45,8 @@ const Profile = () => {
       name: '',
       email: '',
       phone: '',
+      state: '',
+      district: '',
       language: 'en',
     },
   });
@@ -59,6 +63,8 @@ const Profile = () => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      state: user.state,
+      district: user.district,
       language: user.language,
     });
   }, [navigate, form]);
@@ -223,6 +229,42 @@ const Profile = () => {
                                 {...field} 
                                 disabled={!isEditing}
                                 type="tel"
+                                className="h-12"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{translateSync("State")}</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                disabled={!isEditing}
+                                className="h-12"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="district"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{translateSync("District")}</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                disabled={!isEditing}
                                 className="h-12"
                               />
                             </FormControl>

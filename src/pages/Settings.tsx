@@ -53,7 +53,9 @@ const Settings = () => {
       farmSize: '5 acres',
       mainCrops: 'Rice, Tomato',
       email: '',
-      phone: ''
+      phone: '',
+      state: '',
+      district: ''
     },
     theme: 'light'
   });
@@ -69,7 +71,9 @@ const Settings = () => {
           farmSize: user.farmSize || '5 acres',
           mainCrops: user.mainCrops || 'Rice, Tomato',
           email: user.email || '',
-          phone: user.phone || ''
+          phone: user.phone || '',
+          state: user.state || '',
+          district: user.district || ''
         }
       }));
     }
@@ -82,6 +86,8 @@ const Settings = () => {
         name: settings.profile.name,
         email: settings.profile.email,
         phone: settings.profile.phone,
+        state: settings.profile.state,
+        district: settings.profile.district,
         farmSize: settings.profile.farmSize,
         mainCrops: settings.profile.mainCrops
       };
@@ -210,6 +216,28 @@ const Settings = () => {
                         onChange={(e) => setSettings(prev => ({
                           ...prev,
                           profile: { ...prev.profile, phone: e.target.value }
+                        }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">{translateSync('State')}</Label>
+                      <Input
+                        id="state"
+                        value={settings.profile.state}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          profile: { ...prev.profile, state: e.target.value }
+                        }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="district">{translateSync('District')}</Label>
+                      <Input
+                        id="district"
+                        value={settings.profile.district}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          profile: { ...prev.profile, district: e.target.value }
                         }))}
                       />
                     </div>

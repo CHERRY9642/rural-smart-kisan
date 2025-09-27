@@ -100,15 +100,10 @@ const CropRecommendation = () => {
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
-  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
-  const [selectedCrop, setSelectedCrop] = useState<ScheduleItem | null>(null);
-  const [newScheduleItem, setNewScheduleItem] = useState({
-    crop: '',
-    plantingDate: '',
-    harvestDate: '',
-    notes: '',
-    status: 'planned' as const
-  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cropSchedule, setCropSchedule] = useState<any>(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  
 
   // Get user's current location
   const getCurrentLocation = async () => {
@@ -228,47 +223,29 @@ const CropRecommendation = () => {
     }, 2000);
   };
 
-  const addScheduleItem = () => {
-    if (!newScheduleItem.crop || !newScheduleItem.plantingDate || !newScheduleItem.harvestDate) {
+  const handleScheduleSearch = () => {
+    if (!searchQuery) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please enter a crop name",
         variant: "destructive"
       });
       return;
     }
 
-    const item: ScheduleItem = {
-      id: Date.now().toString(),
-      ...newScheduleItem,
-      status: 'planned'
-    };
-
-    setScheduleItems([...scheduleItems, item]);
-      setNewScheduleItem({
-        crop: '',
-        plantingDate: '',
-        harvestDate: '',
-        notes: '',
-        status: 'planned' as const
+    setScheduleLoading(true);
+    setTimeout(() => {
+      const schedule = getCropPlan(searchQuery.toLowerCase());
+      setCropSchedule(schedule);
+      setScheduleLoading(false);
+      toast({
+        title: "Schedule retrieved",
+        description: `Displaying schedule for ${searchQuery}`
       });
-
-    toast({
-      title: "Schedule item added",
-      description: `${newScheduleItem.crop} has been added to your schedule`
-    });
+    }, 1500);
   };
 
-  const updateScheduleStatus = (id: string, status: ScheduleItem['status']) => {
-    setScheduleItems(scheduleItems.map(item => 
-      item.id === id ? { ...item, status } : item
-    ));
-
-    toast({
-      title: "Status updated",
-      description: `Schedule item status changed to ${status}`
-    });
-  };
+  
 
   useEffect(() => {
     if (useCurrentLocation) {
@@ -411,12 +388,12 @@ const CropRecommendation = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <Tabs value={activeMode} onValueChange={(mode) => setActiveMode(mode as RecommendationMode)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="recommendation" className="text-lg font-medium">
+            <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 mb-6">
+              <TabsTrigger value="recommendation" className="text-sm md:text-lg font-medium">
                 <Search className="h-5 w-5 mr-2" />
                 Crop Recommendation
               </TabsTrigger>
-              <TabsTrigger value="scheduling" className="text-lg font-medium">
+              <TabsTrigger value="scheduling" className="text-sm md:text-lg font-medium">
                 <Calendar className="h-5 w-5 mr-2" />
                 Crop Scheduling
               </TabsTrigger>
@@ -657,139 +634,79 @@ const CropRecommendation = () => {
               </div>
             </TabsContent>
 
-            {/* Crop Scheduling Tab */}
-            <TabsContent value="scheduling" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Add Schedule Item */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Plus className="h-6 w-6" />
-                      Add to Schedule
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="scheduleCrop">Crop Name</Label>
-                      <Input
-                        id="scheduleCrop"
-                        value={newScheduleItem.crop}
-                        onChange={(e) => setNewScheduleItem({...newScheduleItem, crop: e.target.value})}
-                        placeholder="e.g., Tomato"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="plantingDate">Planting Date</Label>
-                      <Input
-                        id="plantingDate"
-                        type="date"
-                        value={newScheduleItem.plantingDate}
-                        onChange={(e) => setNewScheduleItem({...newScheduleItem, plantingDate: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="harvestDate">Expected Harvest Date</Label>
-                      <Input
-                        id="harvestDate"
-                        type="date"
-                        value={newScheduleItem.harvestDate}
-                        onChange={(e) => setNewScheduleItem({...newScheduleItem, harvestDate: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="notes">Notes</Label>
-                      <Input
-                        id="notes"
-                        value={newScheduleItem.notes}
-                        onChange={(e) => setNewScheduleItem({...newScheduleItem, notes: e.target.value})}
-                        placeholder="Optional notes"
-                      />
-                    </div>
-                    <Button onClick={addScheduleItem} className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add to Schedule
+            <TabsContent value="scheduling">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Search Crop Schedule</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex w-full max-w-sm items-center space-x-2">
+                    <Input
+                      type="text"
+                      placeholder="e.g., Wheat, Rice, Tomato"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Button type="submit" onClick={handleScheduleSearch} disabled={scheduleLoading}>
+                      {scheduleLoading ? (
+                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Search className="h-4 w-4 mr-2" />
+                      )}
+                      Search
                     </Button>
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Schedule List */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-6 w-6" />
-                      Crop Schedule
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {scheduleItems.length > 0 ? (
-                      <div className="space-y-3">
-                        {scheduleItems.map((item) => (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="border rounded-lg p-3 hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="font-semibold">{item.crop}</h3>
-                              <Badge className={`${getStatusColor(item.status)} text-white`}>
-                                {item.status}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-gray-600 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-3 w-3" />
-                                Plant: {new Date(item.plantingDate).toLocaleDateString()}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3" />
-                                Harvest: {new Date(item.harvestDate).toLocaleDateString()}
-                              </div>
-                              {item.notes && (
-                                <p className="text-xs italic">{item.notes}</p>
-                              )}
-                            </div>
-                            <div className="flex gap-2 mt-3">
-                              {item.status === 'planned' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateScheduleStatus(item.id, 'planted')}
-                                >
-                                  Mark Planted
-                                </Button>
-                              )}
-                              {item.status === 'planted' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateScheduleStatus(item.id, 'growing')}
-                                >
-                                  Mark Growing
-                                </Button>
-                              )}
-                              {item.status === 'growing' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateScheduleStatus(item.id, 'harvested')}
-                                >
-                                  Mark Harvested
-                                </Button>
-                              )}
-                            </div>
-                          </motion.div>
-                        ))}
+                  {scheduleLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <RefreshCw className="h-8 w-8 animate-spin text-green-600" />
+                      <span className="ml-2">Fetching schedule...</span>
+                    </div>
+                  ) : cropSchedule ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4 pt-4"
+                    >
+                      <h3 className="text-xl font-semibold">Schedule for {searchQuery}</h3>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Timeline</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {cropSchedule.timeline.map((item: any, index: number) => (
+                            <li key={index}><strong>{item.phase}</strong> ({item.duration}): {item.activity}</li>
+                          ))}
+                        </ul>
                       </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p>No scheduled items yet. Add your first crop to get started!</p>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Treatments</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {cropSchedule.treatments.map((item: any, index: number) => (
+                            <li key={index}><strong>{item.type}</strong> ({item.timing}): {item.application}</li>
+                          ))}
+                        </ul>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                      <div>
+                        <h4 className="font-semibold">Yield & Revenue</h4>
+                        <p><strong>Yield:</strong> {cropSchedule.yield}</p>
+                        <p><strong>Revenue:</strong> {cropSchedule.revenue}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">Tips</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {cropSchedule.tips.map((tip: string, index: number) => (
+                            <li key={index}>{tip}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Search for a crop to see its detailed schedule.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </motion.div>
