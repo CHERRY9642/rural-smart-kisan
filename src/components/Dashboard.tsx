@@ -101,7 +101,10 @@ export const Dashboard: React.FC = () => {
     { title: t('Disease Check'), emoji: '🦠', color: 'bg-secondary', route: '/disease-detector', feature: 'disease-detector' },
     { title: t('Market Price'), emoji: '📈', color: 'bg-accent', route: '/market-trends', feature: 'market-trends' },
     { title: t('Gov Schemes'), emoji: '🏛️', color: 'bg-farm-leaf', route: '/government-schemes', feature: 'government-schemes' },
-    { title: t('AI Assistant'), emoji: '🤖', color: 'bg-purple-500', route: '/chatbot', feature: 'ai-assistant' },
+    
+    { title: t('Crop Recommendation'), emoji: '🌱', color: 'bg-blue-500', route: '/crop-recommendation', feature: 'crop-recommendation' },
+    { title: t('Cold Storage'), emoji: '❄️', color: 'bg-teal-500', route: '/cold-storage', feature: 'cold-storage' },
+    { title: t('Community'), emoji: '🧑‍🤝‍🧑', color: 'bg-yellow-500', route: '/community', feature: 'community' },
     { title: t('Grocery Market'), emoji: '🛒', color: 'bg-green-500', route: '/grocery-marketplace', feature: 'grocery-marketplace' }
   ];
 

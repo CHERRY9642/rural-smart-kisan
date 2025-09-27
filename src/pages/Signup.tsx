@@ -334,6 +334,12 @@ const Signup = () => {
                                   <span>{translateSync("Artifact Seller")}</span>
                                 </div>
                               </SelectItem>
+                              <SelectItem value="crop_advisor">
+                                <div className="flex items-center gap-2">
+                                  <span>🧑‍🌾</span>
+                                  <span>{translateSync("Crop Advisor")}</span>
+                                </div>
+                              </SelectItem>
                               <SelectItem value="administrator">
                                 <div className="flex items-center gap-2">
                                   <span>👨‍💼</span>

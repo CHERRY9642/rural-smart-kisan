@@ -68,17 +68,18 @@ const menuItems = [
     icon: Snowflake,
     description: '❄️ Storage Access'
   },
-  {
-    title: 'AI Assistant',
-    url: '/chatbot',
-    icon: Bot,
-    description: '🤖 Smart farming help'
-  },
+  
   {
     title: 'Grocery Market',
     url: '/grocery-marketplace',
     icon: ShoppingCart,
     description: '🛒 Buy & sell produce'
+  },
+  {
+    title: 'Community',
+    url: '/community',
+    icon: User,
+    description: '🧑‍🤝‍🧑 Discussion forum'
   },
   {
     title: 'Profile',
