@@ -73,7 +73,7 @@ const ColdStorage = () => {
     translateStaticTexts();
   }, [currentLanguage, translate]);
 
-  const t = (text: string) => translatedTexts[text] || translateSync(text) || text;
+  const t = (text: string) => translatedTexts[text] || text;
 
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
@@ -221,15 +221,12 @@ const ColdStorage = () => {
             animate="animate"
           >
             <Button
-              variant="outline"
-              onClick={() => toast({
-                title: "Favorites",
-                description: `You have ${favorites.size} items in your favorites`,
-              })}
-              className="flex items-center gap-2 w-full sm:w-auto"
+              variant="solid"
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center gap-2 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
             >
-              <Heart className="h-4 w-4" />
-              My Favorites ({favorites.size})
+              <Warehouse className="h-4 w-4" />
+              Register for Storage
             </Button>
             <Button
               variant="outline"
@@ -345,16 +342,7 @@ const ColdStorage = () => {
                       whileHover={{ y: -5 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleFavorite(storage.id)}
-                        className="absolute top-2 right-2 p-1 h-auto"
-                      >
-                        <Heart 
-                          className={`h-4 w-4 ${favorites.has(storage.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
-                        />
-                      </Button>
+                      
                       <storage.icon className="h-8 w-8 md:h-12 md:w-12 text-blue-600 mb-4" />
                       <h3 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{storage.type}</h3>
                       <p className="text-gray-600 text-sm">{storage.details}</p>

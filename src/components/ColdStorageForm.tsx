@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -9,8 +9,8 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 import { useToast } from './ui/use-toast';
-import { usePlan } from '@/contexts/PlanContext';
-import { Snowflake, MapPin, Phone, Calendar, Package, User } from 'lucide-react';
+
+import { Snowflake, MapPin, Phone, Calendar, User } from 'lucide-react';
 
 interface ColdStorageFormProps {
   isOpen: boolean;
@@ -19,8 +19,8 @@ interface ColdStorageFormProps {
 
 export const ColdStorageForm: React.FC<ColdStorageFormProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const { setPlan } = usePlan();
+  
+  
   const [formData, setFormData] = useState({
     farmerName: '',
     farmLocation: '',
@@ -32,9 +32,11 @@ export const ColdStorageForm: React.FC<ColdStorageFormProps> = ({ isOpen, onClos
     preferredDuration: '',
     nearestFacility: '',
     specialRequirements: '',
-    agreedToTerms: false,
-    selectedPlan: 'premium' as 'free' | 'premium' | 'enterprise'
+    agreedToTerms: false
   });
+  
+
+  
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,40 +50,28 @@ export const ColdStorageForm: React.FC<ColdStorageFormProps> = ({ isOpen, onClos
       return;
     }
 
-    // Set the selected plan
-    setPlan(formData.selectedPlan);
-
     // Simulate form submission
     toast({
       title: "Registration Successful! ✅",
-      description: `Your cold storage request has been submitted with ${formData.selectedPlan} plan. ${formData.selectedPlan === 'free' ? 'Redirecting to dashboard...' : 'We\'ll contact you within 24 hours.'}`,
+      description: `Your cold storage request has been submitted. We'll contact you within 24 hours.`,
       duration: 5000
     });
 
-    // Navigate to dashboard if free plan is selected
-    if (formData.selectedPlan === 'free') {
-      setTimeout(() => {
-        navigate('/');
-        onClose();
-      }, 1500);
-    } else {
-      // Reset form and close for other plans
-      setFormData({
-        farmerName: '',
-        farmLocation: '',
-        phoneNumber: '',
-        email: '',
-        farmSize: '',
-        produceType: '',
-        estimatedQuantity: '',
-        preferredDuration: '',
-        nearestFacility: '',
-        specialRequirements: '',
-        agreedToTerms: false,
-        selectedPlan: 'premium'
-      });
-      onClose();
-    }
+    // Reset form and close
+    setFormData({
+      farmerName: '',
+      farmLocation: '',
+      phoneNumber: '',
+      email: '',
+      farmSize: '',
+      produceType: '',
+      estimatedQuantity: '',
+      preferredDuration: '',
+      nearestFacility: '',
+      specialRequirements: '',
+      agreedToTerms: false
+    });
+    onClose();
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -215,102 +205,7 @@ export const ColdStorageForm: React.FC<ColdStorageFormProps> = ({ isOpen, onClos
                 </div>
               </div>
 
-              {/* Plan Selection */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Select Your Plan
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Free Plan */}
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.selectedPlan === 'free' 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => handleInputChange('selectedPlan', 'free')}
-                  >
-                    <div className="text-center">
-                      <h4 className="text-lg font-semibold mb-2">Free Plan</h4>
-                      <p className="text-2xl font-bold text-primary mb-3">₹0/month</p>
-                      <ul className="text-sm space-y-1 text-left">
-                        <li>✅ Weather updates</li>
-                        <li>✅ Market trends</li>
-                        <li>✅ Government schemes</li>
-                        <li>✅ AI assistant</li>
-                        <li>✅ Grocery marketplace</li>
-                        <li>❌ Crop monitoring</li>
-                        <li>❌ Disease detection</li>
-                      </ul>
-                    </div>
-                    {formData.selectedPlan === 'free' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-primary rounded-full"></div>
-                    )}
-                  </motion.div>
-
-                  {/* Premium Plan */}
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.selectedPlan === 'premium' 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => handleInputChange('selectedPlan', 'premium')}
-                  >
-                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-medium">
-                        Popular
-                      </span>
-                    </div>
-                    <div className="text-center">
-                      <h4 className="text-lg font-semibold mb-2">Premium Plan</h4>
-                      <p className="text-2xl font-bold text-primary mb-3">₹999/month</p>
-                      <ul className="text-sm space-y-1 text-left">
-                        <li>✅ All Free features</li>
-                        <li>✅ Advanced crop monitoring</li>
-                        <li>✅ AI disease detection</li>
-                        <li>✅ Cold storage access</li>
-                        <li>✅ Priority support</li>
-                        <li>✅ Detailed analytics</li>
-                      </ul>
-                    </div>
-                    {formData.selectedPlan === 'premium' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-primary rounded-full"></div>
-                    )}
-                  </motion.div>
-
-                  {/* Enterprise Plan */}
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.selectedPlan === 'enterprise' 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => handleInputChange('selectedPlan', 'enterprise')}
-                  >
-                    <div className="text-center">
-                      <h4 className="text-lg font-semibold mb-2">Enterprise Plan</h4>
-                      <p className="text-2xl font-bold text-primary mb-3">₹2999/month</p>
-                      <ul className="text-sm space-y-1 text-left">
-                        <li>✅ All Premium features</li>
-                        <li>✅ Multi-farm management</li>
-                        <li>✅ Custom integrations</li>
-                        <li>✅ Dedicated support</li>
-                        <li>✅ Advanced reporting</li>
-                        <li>✅ API access</li>
-                      </ul>
-                    </div>
-                    {formData.selectedPlan === 'enterprise' && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-primary rounded-full"></div>
-                    )}
-                  </motion.div>
-                </div>
-              </div>
+              
 
               {/* Storage Requirements */}
               <div className="space-y-4">
