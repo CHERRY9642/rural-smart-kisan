@@ -7,7 +7,7 @@ export interface TranslationResponse {
 
 // Google Cloud Translation API configuration
 const TRANSLATION_API_URL = 'https://translation.googleapis.com/language/translate/v2';
-const API_KEY = "AIzaSyCanZ-4Meo-PeI-0bSJrrxS_tD9kd6BttE";
+const API_KEY = "AIzaSyAoKqopawAWSOLDwa66DzE2Z2lVkZE2CL4";
 
 export const translateText = async (
   text: string, 

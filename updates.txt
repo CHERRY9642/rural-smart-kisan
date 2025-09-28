@@ -1,92 +1,445 @@
-Result:
-Crop: Rice
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crop Recommendation System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .api-status {
+      transition: all 0.3s ease;
+    }
+    .dark-mode {
+      background-color: #1a202c !important;
+      color: #e2e8f0 !important;
+    }
+    .dark-mode .bg-white {
+      background-color: #2d3748 !important;
+    }
+    .dark-mode .bg-gray-100 {
+      background-color: #1a202c !important;
+    }
+    .dark-mode .text-gray-800 {
+      color: #e2e8f0 !important;
+    }
+    .dark-mode .bg-blue-50 {
+      background-color: #2a4365 !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
 
-Language: English
+  <!-- Navbar -->
+  <nav class="bg-blue-50 shadow px-4 py-2 flex justify-between items-center sticky top-0 z-50 h-14">
+    <div class="flex items-center gap-2">
+      <div class="w-28 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold">
+        🌾 KRISHI
+      </div>
+      <!-- 🌐 Google Translate Dropdown -->
+      <div id="google_translate_element" class="ml-2"></div>
+    </div>
+    <div class="flex items-center gap-6 text-base font-medium">
+      <button id="theme-toggle" class="text-xl">🌙</button>
+      <a href="index.html" class="hover:text-green-600">Crop Monitoring</a>
+      <a href="cropd.html" class="hover:text-green-600">Disease Detection</a>
+      <a href="recomendation.html" class="hover:text-green-600 font-semibold text-green-700">Recommendation</a>
+      <select id="moreDropdown" class="border rounded px-3 py-1.5 text-base">
+        <option disabled selected>More</option>
+        <option value="marketprice.html">Market Price</option>
+        <option value="chatbot.html">Chatbot</option>
+        <option value="ecommerce.html">Fertilizer Info</option>
+      </select>
+    </div>
+  </nav>
 
-Confidence: high
+  <!-- API Status -->
+  <div id="apiStatus" class="api-status mx-6 mt-4 p-3 rounded text-sm hidden">
+    <!-- API status will appear here -->
+  </div>
 
-Source: Gemini AI
+  <!-- Main Content: Form + Blank Box -->
+  <div class="flex flex-col md:flex-row gap-6 p-6">
+    
+    <!-- Left Side: Form -->
+    <div class="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
+      <h1 class="text-2xl font-bold text-green-700 mb-4 text-center">🌾 Crop Recommendation System</h1>
 
-Timestamp: 9/28/2025, 1:43:38 PM
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🧪 Nitrogen (N)</label>
+          <input type="number" id="n" class="w-full p-2 border rounded mt-1" placeholder="e.g. 90" min="0" max="140">
+        </div>
 
-As an agricultural scientist specializing in Indian rice crops, I have analyzed the image provided. Here is my detailed assessment and a set of actionable recommendations for a farmer in India.
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🧪 Phosphorus (P)</label>
+          <input type="number" id="p" class="w-full p-2 border rounded mt-1" placeholder="e.g. 40" min="0" max="145">
+        </div>
 
-**Disclaimer:** This analysis is based on a single image of one leaf. A comprehensive diagnosis requires assessing the entire plant and the field conditions.
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🧪 Potassium (K)</label>
+          <input type="number" id="k" class="w-full p-2 border rounded mt-1" placeholder="e.g. 43" min="0" max="205">
+        </div>
 
----
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🌡 Temperature (°C)</label>
+          <input type="number" id="temperature" class="w-full p-2 border rounded mt-1" placeholder="e.g. 25.6" min="-10" max="50" step="0.1">
+        </div>
 
-### **DISEASE ASSESSMENT**
+        <div>
+          <label class="block text-sm font-medium text-gray-700">💧 Humidity (%)</label>
+          <input type="number" id="humidity" class="w-full p-2 border rounded mt-1" placeholder="e.g. 80" min="0" max="100" step="0.1">
+        </div>
 
-*   **Pest Identification:** The symptoms strongly indicate damage caused by the **Rice Leaf Folder** (*Cnaphalocrocis medinalis*). The larva of this moth folds a rice leaf around itself and scrapes the green tissue (chlorophyll) from the inside. This is a very common pest in rice paddies across India.
-    *   *Alternative Possibility:* The damage could also be confused with that of **Rice Hispa** (*Dicladispa armigera*), which also creates white, longitudinal streaks. However, the scraped, window-like appearance is more characteristic of the Leaf Folder.
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🌱 Soil pH</label>
+          <input type="number" id="ph" class="w-full p-2 border rounded mt-1" placeholder="e.g. 6.5" min="0" max="14" step="0.1">
+        </div>
 
-*   **Severity Level:**
-    *   **On this single leaf:** The severity is **High**. A significant portion of the leaf's photosynthetic area is damaged.
-    *   **Field Severity:** **Undetermined**. The severity for the entire field can only be determined by inspection. The economic threshold is typically reached when 10% of leaves are damaged or 1-2 freshly damaged leaves per hill are observed during the tillering and stem elongation stages.
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🌧 Rainfall (mm)</label>
+          <input type="number" id="rainfall" class="w-full p-2 border rounded mt-1" placeholder="e.g. 200" min="0" max="500" step="0.1">
+        </div>
 
-*   **Key Visible Symptoms:**
-    *   **Longitudinal White Streaks:** You can see white, translucent, and papery streaks running parallel to the leaf veins where the green matter has been eaten.
-    *   **Necrotic (Brown) Patches:** The older damaged areas have turned brown and died off.
-    *   **Scraped Epidermis:** The pest doesn't eat through the leaf entirely but scrapes the surface, leaving one layer of the leaf (the epidermis) intact, which creates the "window-like" appearance.
-    *   **(Not visible but to look for):** In the field, you would find the leaf tip or margin folded over and sealed with silk. You might also find small green caterpillars and their black frass (droppings) inside the fold.
+        <div>
+          <label class="block text-sm font-medium text-gray-700">🍂 Season</label>
+          <select id="season" class="w-full p-2 border rounded mt-1">
+            <option value="Summer">Summer</option>
+            <option value="Winter">Winter</option>
+            <option value="Autumn">Autumn</option>
+            <option value="Spring" selected>Spring</option>
+            <option value="Monsoon">Monsoon</option>
+          </select>
+        </div>
 
----
+        <button onclick="recommendCrop()" class="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition duration-300">
+          🌟 Get Crop Recommendation
+        </button>
+      </div>
 
-### **TREATMENT RECOMMENDATIONS**
+      <div class="mt-6 p-4 rounded shadow" id="result">
+        <div class="text-center text-gray-500">
+          Enter soil and weather data to get crop recommendation
+        </div>
+      </div>
+    </div>
 
-#### **Immediate Actions**
+    <!-- Right Side: Crop Scheduler -->
+    <div class="w-full md:w-1/2 bg-white rounded-xl shadow-xl p-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-4">🌿 Crop Scheduler</h1>
 
-1.  **Scout the Field:** Do not spray immediately based on one leaf. Walk through your field in a zig-zag or 'W' pattern and inspect at least 10-15 hills randomly. Check if the pest is active (freshly folded leaves with live larvae inside).
-2.  **Check for Natural Enemies:** Look for spiders, wasps, and other predatory insects. If they are abundant, they may control the pest naturally. Avoid broad-spectrum chemical sprays that would kill these beneficial insects.
-3.  **Manual Removal:** In small plots with low-level infestation, you can manually remove and crush the folded leaves containing the larvae.
+      <!-- Search Bar -->
+      <input type="text" id="crop-search" placeholder="Search crop..." class="w-full mb-6 p-3 border rounded-lg" oninput="filterCrops()">
 
-#### **Organic Solutions**
+      <!-- Crop Info -->
+      <div id="crop-info" class="mb-6 p-4 bg-blue-50 rounded-lg">
+        <div class="text-center text-gray-500">
+          Select a crop to view details
+        </div>
+      </div>
 
-1.  **Neem Seed Kernel Extract (NSKE) 5%:** This is a highly effective and widely available solution. Mix 5 kg of neem seed kernel powder in 100 litres of water, leave it overnight, filter it, and spray.
-2.  **Neem Oil:** Use a commercial formulation of neem oil (1500 ppm) at a rate of 3-5 ml per litre of water, mixed with a sticking agent (like khadi soap solution).
-3.  **Trichogramma Cards:** Release the parasitic wasp *Trichogramma chilonis* (egg parasitoid). Attach the 'Tricho-cards' to the rice leaves (around 5-6 cards per acre) at weekly intervals, starting 15-20 days after transplanting. This prevents the eggs from hatching.
-4.  **Bacillus thuringiensis (Bt):** Spray Bt-based biopesticides. This bacteria specifically targets and kills caterpillars without harming beneficial insects.
+      <!-- Fertilizer Schedule -->
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold text-blue-900 mb-3">Fertilizer Schedule</h2>
+        <div id="fertilizer-schedule" class="space-y-3">
+          <div class="text-center text-gray-500 p-4">
+            Crop details will appear here
+          </div>
+        </div>
+      </div>
 
-#### **Chemical Treatments (Use only if infestation crosses the Economic Threshold Level - ETL)**
+      <!-- Pesticide Schedule -->
+      <div>
+        <h2 class="text-xl font-semibold text-blue-900 mb-3">Pesticide Schedule</h2>
+        <div id="pesticide-schedule" class="space-y-3">
+          <div class="text-center text-gray-500 p-4">
+            Crop details will appear here
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-*It is crucial to rotate insecticides to prevent resistance.*
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi,ta,te,ml,kn,gu,bn,mr,pa,ur',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
+    }
+  </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  
 
-1.  **First Choice (Safer & More Specific):**
-    *   **Chlorantraniliprole 18.5% SC:** (e.g., Coragen). Use at a low dose (60 ml per acre). It is very effective against caterpillars and relatively safe for beneficial insects.
-    *   **Flubendiamide 39.35% SC:** (e.g., Fame). Use around 20 ml per acre.
-2.  **Contact Insecticides:**
-    *   **Cartap Hydrochloride 50% SP:** Use around 400 grams per acre.
-    *   **Lambda-cyhalothrin 5% EC:** Use around 100-200 ml per acre. (Note: This is a broad-spectrum insecticide and will also kill beneficial insects).
+  <script>
+    // CORRECT API URLs - Using your actual Render URL
+    const RECOMMEND_API = "https://krishirecommend-api.onrender.com/recommend";
+    const HEALTH_API = "https://krishirecommend-api.onrender.com/health";
 
-**Safety Note:** Always wear protective gear (gloves, mask) when mixing and spraying chemicals. Follow the dosage instructions on the product label and respect the Pre-Harvest Interval (PHI).
+    // Dark mode functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = '☀️';
+        }
 
----
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '☀️';
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            }
+        });
 
-### **PREVENTION GUIDANCE**
+        // More dropdown functionality
+        document.getElementById('moreDropdown').addEventListener('change', function () {
+            const selectedValue = this.value;
+            if (selectedValue) {
+                window.location.href = selectedValue;
+            }
+        });
 
-#### **Cultural Practices**
+        // Check API status on load
+        checkAPIStatus();
+        
+        // Load crop data
+        loadCropsData();
+    });
 
-1.  **Balanced Nutrient Management:** Avoid excessive use of Nitrogen (N) fertilizer (like Urea). Too much nitrogen makes the leaves lush and soft, which is highly attractive to leaf folders. Use a balanced NPK ratio as per soil test recommendations.
-2.  **Proper Plant Spacing:** Avoid dense planting. Wider spacing (e.g., 20x15 cm) allows for better sunlight penetration and air circulation, creating a less favourable environment for the pest.
-3.  **Weed Control:** Keep the bunds and field free of weeds, as many grassy weeds serve as alternative hosts for the pest.
-4.  **Use Resistant Varieties:** Consult your local agricultural university or KVK (Krishi Vigyan Kendra) for rice varieties that show tolerance or resistance to leaf folders.
+    // ---------------------- API STATUS CHECK ----------------------
+    async function checkAPIStatus() {
+      try {
+        const response = await fetch(HEALTH_API);
+        const data = await response.json();
+        
+        const statusElement = document.getElementById('apiStatus');
+        statusElement.className = 'api-status mx-6 mt-4 p-3 rounded text-sm';
+        
+        if (data.status === 'healthy') {
+          statusElement.innerHTML = `✅ API Connected | Model: ${data.model_loaded ? 'Loaded' : 'Not Loaded'} | Service: ${data.service || 'Crop Recommendation'}`;
+          statusElement.style.background = '#d1fae5';
+          statusElement.style.color = '#065f46';
+        } else {
+          statusElement.innerHTML = '⚠️ API Issues - Check connection';
+          statusElement.style.background = '#fef3c7';
+          statusElement.style.color = '#92400e';
+        }
+        statusElement.classList.remove('hidden');
+      } catch (error) {
+        console.error("API status check failed:", error);
+        const statusElement = document.getElementById('apiStatus');
+        statusElement.innerHTML = '❌ API Offline - Please check deployment';
+        statusElement.style.background = '#fee2e2';
+        statusElement.style.color = '#991b1b';
+        statusElement.classList.remove('hidden');
+      }
+    }
 
-#### **Monitoring Advice**
+    // ---------------------- CROP RECOMMENDATION ----------------------
+    async function recommendCrop() {
+      const resultDiv = document.getElementById("result");
+      
+      // Get form values
+      const payload = {
+        N: parseFloat(document.getElementById("n").value),
+        P: parseFloat(document.getElementById("p").value),
+        K: parseFloat(document.getElementById("k").value),
+        temperature: parseFloat(document.getElementById("temperature").value),
+        humidity: parseFloat(document.getElementById("humidity").value),
+        ph: parseFloat(document.getElementById("ph").value),
+        rainfall: parseFloat(document.getElementById("rainfall").value),
+        season: document.getElementById("season").value
+      };
 
-1.  **Regular Field Scouting:** Start monitoring your field weekly from 15-20 days after transplanting.
-2.  **Look for Moths:** The adult moths are yellowish-brown and active during the evening. Seeing an increase in moth activity is an early warning sign. You can use light traps to monitor and trap adult moths.
-3.  **Focus on Fresh Damage:** Pay attention to freshly folded leaves, as this indicates an active and growing larval population that needs control.
+      // Validate inputs
+      for (const [key, value] of Object.entries(payload)) {
+        if (isNaN(value) && key !== 'season') {
+          resultDiv.innerHTML = `<div class="bg-red-50 text-red-700 p-4 rounded">❌ Please enter a valid number for ${key}</div>`;
+          return;
+        }
+      }
 
-#### **Long-Term Prevention**
+      // Validate season (it's a string, not a number)
+      if (!payload.season) {
+        resultDiv.innerHTML = `<div class="bg-red-50 text-red-700 p-4 rounded">❌ Please select a season</div>`;
+        return;
+      }
 
-1.  **Synchronous Planting:** If possible, coordinate with neighbouring farmers to plant rice around the same time. This helps break the pest’s life cycle between seasons in a large area.
-2.  **Conserve Natural Enemies:** Create a habitat for beneficial insects. Avoid unnecessary pesticide sprays. Spiders, dragonflies, predatory beetles, and parasitic wasps are the farmer's best friends in controlling leaf folders.
-3.  **Post-Harvest Tillage:** After harvesting, plough the field to expose and destroy the pupae of the leaf folder that may be present in the stubble.
+      resultDiv.innerHTML = `<div class="bg-blue-50 text-blue-700 p-4 rounded">🔄 Analyzing soil and weather conditions...</div>`;
 
+      try {
+        const response = await fetch(RECOMMEND_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || `API error: ${response.status}`);
+        }
 
-the above result is the example we got form the api in the deceasedection page.give the structre ui for better user interaction.Added collapsible sections with smooth animations
+        const data = await response.json();
 
-Implemented section toggling functionality
+        if (data.success) {
+          // Display recommendation
+          resultDiv.innerHTML = `
+            <div class="bg-green-50 text-green-800 p-4 rounded-lg border border-green-200">
+              <div class="text-center mb-3">
+                <span class="text-2xl">🌾</span>
+                <h3 class="text-xl font-bold mt-2">Recommended Crop</h3>
+              </div>
+              <div class="text-center mb-4">
+                <span class="text-3xl font-bold text-green-600">${data.recommended_crop}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="bg-white p-2 rounded">
+                  <strong>Soil Analysis:</strong><br>
+                  N: ${data.soil_analysis.nitrogen} | P: ${data.soil_analysis.phosphorus}<br>
+                  K: ${data.soil_analysis.potassium} | pH: ${data.soil_analysis.ph_level}
+                </div>
+                <div class="bg-white p-2 rounded">
+                  <strong>Weather:</strong><br>
+                  Temp: ${data.weather_conditions.temperature}°C<br>
+                  Humidity: ${data.weather_conditions.humidity}%<br>
+                  Rainfall: ${data.weather_conditions.rainfall}mm
+                </div>
+              </div>
+              <div class="text-center mt-3 text-xs text-gray-600">
+                Season: ${data.season} | Confidence: ${data.confidence}
+              </div>
+            </div>
+          `;
 
-Better formatting for metadata and analysis content
+          // Update crop details if available
+          if (window.crops && window.crops.length > 0) {
+            const crop = window.crops.find(c => c.name.toLowerCase() === data.recommended_crop.toLowerCase());
+            if (crop) {
+              updateCropDetails(crop);
+            }
+          }
+        } else {
+          resultDiv.innerHTML = `<div class="bg-red-50 text-red-700 p-4 rounded">⚠ ${data.error}</div>`;
+        }
+      } catch (error) {
+        console.error("Recommendation error:", error);
+        resultDiv.innerHTML = `<div class="bg-red-50 text-red-700 p-4 rounded">❌ Error: ${error.message}</div>`;
+      }
+    }
+
+    // ---------------------- CROP DATA LOADING ----------------------
+    async function loadCropsData() {
+      try {
+        const response = await fetch('crops.json');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        window.crops = data.crops;
+        console.log('Crops data loaded successfully:', window.crops.length, 'crops');
+      } catch (error) {
+        console.error('Error loading crops data:', error);
+        // Create some default crops data if file not found
+        window.crops = [
+          {
+            name: "Rice",
+            season: "Monsoon",
+            sowing_period: "June-July",
+            harvest_period: "October-November",
+            fertilizer_schedule: [],
+            pesticide_schedule: []
+          },
+          {
+            name: "Wheat", 
+            season: "Winter",
+            sowing_period: "November-December",
+            harvest_period: "March-April",
+            fertilizer_schedule: [],
+            pesticide_schedule: []
+          }
+        ];
+      }
+    }
+
+    // ---------------------- CROP SCHEDULER FUNCTIONS ----------------------
+    function formatDate(days) {
+      const today = new Date();
+      today.setDate(today.getDate() + days);
+      return today.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    }
+
+    function filterCrops() {
+      const input = document.getElementById("crop-search").value.toLowerCase();
+      if (window.crops && window.crops.length > 0) {
+        const crop = window.crops.find(c => c.name.toLowerCase().startsWith(input));
+        if (crop) {
+          updateCropDetails(crop);
+        } else {
+          document.getElementById("crop-info").innerHTML = `
+            <div class="text-center text-gray-500 p-4">
+              No crop found with name: "${input}"
+            </div>
+          `;
+        }
+      }
+    }
+
+    function updateCropDetails(crop) {
+      document.getElementById("crop-info").innerHTML = `
+        <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+          <p class="font-semibold text-lg text-green-800">${crop.name}</p>
+          <p><strong>Season:</strong> ${crop.season}</p>
+          <p><strong>Sowing Period:</strong> ${crop.sowing_period}</p>
+          <p><strong>Harvest Period:</strong> ${crop.harvest_period}</p>
+        </div>
+      `;
+
+      const renderSchedule = (schedule, containerId) => {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        
+        if (schedule && schedule.length > 0) {
+          schedule.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'bg-blue-100 hover:scale-105 hover:shadow-lg transition transform duration-300 rounded-lg p-4 cursor-pointer flex items-start space-x-4';
+            div.innerHTML = `
+              <div class="flex-shrink-0">
+                <div class="bg-blue-500 text-white w-12 h-12 flex items-center justify-center rounded-full text-sm font-bold animate-pulse">
+                  ${item.days_after_planting}d
+                </div>
+                <div class="mt-1 text-xs text-center">📅 ${formatDate(item.days_after_planting)}</div>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-blue-900 font-semibold">${item.stage}</h3>
+                <p class="text-sm text-gray-700">${item.application}</p>
+                <div class="extra-info mt-2 hidden bg-blue-50 p-3 rounded-lg border text-sm text-gray-600">${item.extra_info || 'No additional info available.'}</div>
+              </div>
+            `;
+            div.addEventListener('click', () => {
+              const info = div.querySelector('.extra-info');
+              const wasVisible = !info.classList.contains('hidden');
+              document.querySelectorAll('.extra-info').forEach(el => el.classList.add('hidden'));
+              if (!wasVisible) info.classList.remove('hidden');
+            });
+            container.appendChild(div);
+          });
+        } else {
+          container.innerHTML = '<div class="text-center text-gray-500 p-4">No schedule available</div>';
+        }
+      };
+
+      renderSchedule(crop.fertilizer_schedule, 'fertilizer-schedule');
+      renderSchedule(crop.pesticide_schedule, 'pesticide-schedule');
+    }
+  </script>
+</body>
+</html>
+
+The above code is a working implementation of the crop recommendation system. It takes input values, sends them to the API, and then fetches the results as shown in the example. Please implement this process in the croprecommendation.tsx file using the same input values as in the working code. Remove the existing parameters in the crop recommendation system, include the specified input values, and display the output within the crop recommendation system. Do not change the crop scheduling functionality.use the same ui.

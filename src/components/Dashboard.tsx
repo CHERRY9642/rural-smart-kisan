@@ -28,7 +28,7 @@ export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { translate, translateSync, currentLanguage } = useLanguage();
   const { weatherData, loading, error, refetch } = useWeather();
-  const { hasFeatureAccess, setPlan } = usePlan();
+  const { hasFeatureAccess, setPlan, currentPlan } = usePlan();
   const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -96,19 +96,20 @@ export const Dashboard: React.FC = () => {
 
   const t = (text: string) => translatedTexts[text] || translateSync(text) || text;
 
-  const allQuickActions = [
-    { title: t('Crop Monitor'), emoji: '🌾', color: 'bg-primary', route: '/crop-monitor', feature: 'crop-monitor' },
-    { title: t('Disease Check'), emoji: '🦠', color: 'bg-secondary', route: '/disease-detector', feature: 'disease-detector' },
-    { title: t('Market Price'), emoji: '📈', color: 'bg-accent', route: '/market-trends', feature: 'market-trends' },
-    { title: t('Gov Schemes'), emoji: '🏛️', color: 'bg-farm-leaf', route: '/government-schemes', feature: 'government-schemes' },
-    
-    { title: t('Crop Recommendation'), emoji: '🌱', color: 'bg-blue-500', route: '/crop-recommendation', feature: 'crop-recommendation' },
-    { title: t('Cold Storage'), emoji: '❄️', color: 'bg-teal-500', route: '/cold-storage', feature: 'cold-storage' },
-    { title: t('Community'), emoji: '🧑‍🤝‍🧑', color: 'bg-yellow-500', route: '/community', feature: 'community' },
-    { title: t('Grocery Market'), emoji: '🛒', color: 'bg-green-500', route: '/grocery-marketplace', feature: 'grocery-marketplace' }
-  ];
-
-  const quickActions = allQuickActions.filter(action => hasFeatureAccess(action.feature));
+  const quickActions = React.useMemo(() => {
+    const allQuickActions = [
+      { title: t('Crop Monitor'), emoji: '🌾', color: 'bg-primary', route: '/crop-monitor', feature: 'crop-monitor' },
+      { title: t('Disease Check'), emoji: '🦠', color: 'bg-secondary', route: '/disease-detector', feature: 'disease-detector' },
+      { title: t('Market Price'), emoji: '📈', color: 'bg-accent', route: '/market-trends', feature: 'market-trends' },
+      { title: t('Gov Schemes'), emoji: '🏛️', color: 'bg-farm-leaf', route: '/government-schemes', feature: 'government-schemes' },
+      
+      { title: t('Crop Recommendation'), emoji: '🌱', color: 'bg-blue-500', route: '/crop-recommendation', feature: 'crop-recommendation' },
+      { title: t('Cold Storage'), emoji: '❄️', color: 'bg-teal-500', route: '/cold-storage', feature: 'cold-storage' },
+      { title: t('Community'), emoji: '🧑‍🤝‍🧑', color: 'bg-yellow-500', route: '/community', feature: 'community' },
+      { title: t('Grocery Market'), emoji: '🛒', color: 'bg-green-500', route: '/grocery-marketplace', feature: 'grocery-marketplace' }
+    ];
+    return allQuickActions.filter(action => hasFeatureAccess(action.feature));
+  }, [t, hasFeatureAccess, currentPlan]);
 
   const handleQuickAction = (route: string, feature: string) => {
     if (hasFeatureAccess(feature)) {
