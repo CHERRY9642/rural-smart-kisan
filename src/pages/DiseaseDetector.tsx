@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { Layout } from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { 
   Image as ImageIcon, 
@@ -14,9 +15,12 @@ import {
   ChevronLeft,
   Microscope,
   Scan,
-  Brain
+  Brain,
+  Globe
 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, languages } from '@/contexts/LanguageContext';
+import AnalysisReport from '@/components/AnalysisReport';
+import LoadingReport from '@/components/LoadingReport';
 
 // Import crop images
 import riceImage from '@/assets/crops/rice.jpg';
@@ -41,6 +45,14 @@ interface Crop {
   name: string;
   image: string;
   diseases: { name: string; image: string; description: string }[];
+}
+
+interface Metadata {
+  crop_type: string;
+  language: string;
+  ai_source: string;
+  confidence: string;
+  timestamp: string;
 }
 
 const crops: Crop[] = [
@@ -92,7 +104,7 @@ const crops: Crop[] = [
 ];
 
 const DiseaseDetector: React.FC = () => {
-  const { translateSync } = useLanguage();
+  const { translateSync, currentLanguage } = useLanguage();
   const [mode, setMode] = useState<DetectorMode>('normal');
   const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -100,7 +112,36 @@ const DiseaseDetector: React.FC = () => {
   const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisMetadata, setAnalysisMetadata] = useState<Metadata | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(currentLanguage.code);
+  const [apiStatus, setApiStatus] = useState<string>('Checking API status...');
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const API_BASE_URL = 'https://krishi-rakshak-2.onrender.com';
+
+  useEffect(() => {
+    const checkAPIStatus = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.status === 'healthy') {
+          setApiStatus(`✅ API is healthy | Gemini Available: ${data.gemini_available}`);
+        } else {
+          setApiStatus('⚠ API is running but health check failed');
+        }
+      } catch (error) {
+        console.error('API Status Error:', error);
+        setApiStatus('❌ Cannot connect to API');
+      }
+    };
+    checkAPIStatus();
+    const interval = setInterval(checkAPIStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const modeConfig = {
     normal: { icon: Brain, label: 'Normal', color: 'bg-primary' },
@@ -155,6 +196,7 @@ const DiseaseDetector: React.FC = () => {
     if (file && file.type.startsWith('image/')) {
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
+      setError(null);
     }
   }, []);
 
@@ -164,55 +206,64 @@ const DiseaseDetector: React.FC = () => {
     multiple: false,
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
   const handleRemoveImage = () => {
     setSelectedImage(null);
     setPreviewUrl(null);
   };
 
-  const handlePasteImage = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.indexOf('image') !== -1) {
-        const file = item.getAsFile();
-        if (file) {
-          setSelectedImage(file);
-          setPreviewUrl(URL.createObjectURL(file));
-        }
+  const handleAnalyze = async () => {
+    if (!selectedImage || !selectedCrop) return;
+    
+    setIsAnalyzing(true);
+    setError(null);
+    setAnalysisResult(null);
+    setAnalysisMetadata(null);
+
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+    formData.append('crop_type', selectedCrop.name);
+    formData.append('language', languages.find(l => l.code === selectedLanguage)?.name || 'English');
+    formData.append('use_ai', 'true');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/analyze`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Analysis failed with status ' + response.status }));
+        throw new Error(errorData.detail || 'Something went wrong');
       }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAnalysisResult(result.analysis);
+        setAnalysisMetadata(result.metadata);
+      } else {
+        throw new Error(result.error || 'Analysis failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during analysis.');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!selectedImage) return;
-    
-    setIsAnalyzing(true);
-    // Simulate analysis
-    setTimeout(() => {
-      setAnalysisResult('Leaf Spot Disease detected with 85% confidence. Recommended treatment: Apply fungicide spray.');
-      setIsAnalyzing(false);
-    }, 3000);
-  };
-
-  const resetToNormal = () => {
+  const resetState = () => {
     setSelectedCrop(null);
     setSelectedImage(null);
     setPreviewUrl(null);
     setAnalysisResult(null);
+    setAnalysisMetadata(null);
+    setError(null);
+    setIsAnalyzing(false);
   };
 
   return (
     <Layout>
       <div className="container mx-auto py-6 space-y-4">
-        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -235,9 +286,9 @@ const DiseaseDetector: React.FC = () => {
           >
             Identify and diagnose crop diseases using advanced AI technology. Upload images of your crops to get instant analysis and treatment recommendations.
           </motion.p>
+          <Badge variant="outline">{apiStatus}</Badge>
         </motion.div>
 
-        {/* Mode Selector */}
         <Card>
           <CardContent className="p-2 sm:p-3">
             <div className="flex justify-center space-x-0.5 sm:space-x-1">
@@ -249,7 +300,7 @@ const DiseaseDetector: React.FC = () => {
                   }`}
                   onClick={() => {
                     setMode(key as DetectorMode);
-                    resetToNormal();
+                    resetState();
                   }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -275,7 +326,6 @@ const DiseaseDetector: React.FC = () => {
         </Card>
 
         <AnimatePresence mode="wait">
-          {/* Normal Mode - Crop Selection */}
           {mode === 'normal' && !selectedCrop && (
             <motion.div
               key="crop-selection"
@@ -313,7 +363,6 @@ const DiseaseDetector: React.FC = () => {
             </motion.div>
           )}
 
-          {/* Normal Mode - Analysis Interface */}
           {mode === 'normal' && selectedCrop && (
             <motion.div
               key="normal-analysis"
@@ -322,23 +371,38 @@ const DiseaseDetector: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
               className="grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6"
             >
-              {/* Left Side - Upload Image */}
               <Card>
-                <CardHeader className="flex flex-row items-center space-y-0 space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setSelectedCrop(null)}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <CardTitle className="text-primary">Upload Image</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div className="flex items-center space-x-2">
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={resetState}
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <CardTitle className="text-primary">Upload Image</CardTitle>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-muted-foreground" />
+                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                            <SelectTrigger className="w-[120px]">
+                                <SelectValue placeholder="Language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {languages.map(lang => (
+                                    <SelectItem key={lang.code} value={lang.code}>
+                                        <div className="flex items-center gap-2">
+                                            <span>{lang.flag}</span>
+                                            <span>{lang.name}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-sm text-muted-foreground">
-                    Upload from device 📱:
-                  </div>
-                  
                   <div
                     {...getRootProps()}
                     className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
@@ -348,10 +412,6 @@ const DiseaseDetector: React.FC = () => {
                     <input {...getInputProps()} />
                     <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-sm">Drop images here or click to browse</p>
-                  </div>
-
-                  <div className="text-center text-sm text-muted-foreground">
-                    Capture from camera:
                   </div>
 
                   <div className="flex space-x-2">
@@ -373,10 +433,9 @@ const DiseaseDetector: React.FC = () => {
                     )}
                   </div>
 
-
                   {isCameraOpen && (
-                    <div className="relative">
-                      <video ref={videoRef} autoPlay playsInline className="w-full rounded-lg" />
+                    <div className="relative flex justify-center">
+                      <video ref={videoRef} autoPlay playsInline className="w-full rounded-lg max-h-64 max-w-sm" />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -389,8 +448,8 @@ const DiseaseDetector: React.FC = () => {
                   )}
 
                   {previewUrl && (
-                    <div className="relative">
-                      <img src={previewUrl} alt="Preview" className="w-full rounded-lg" />
+                    <div className="relative flex justify-center">
+                      <img src={previewUrl} alt="Preview" className="w-full rounded-lg max-h-64 max-w-sm object-cover" />
                       <Button
                         variant="ghost"
                         size="sm"
@@ -410,7 +469,7 @@ const DiseaseDetector: React.FC = () => {
                     {isAnalyzing ? (
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
-                        <span>🧠 Predict</span>
+                        <span>🧠 Predicting...</span>
                       </div>
                     ) : (
                       <span>🧠 Predict</span>
@@ -419,46 +478,50 @@ const DiseaseDetector: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Right Side - AI/ML Prediction Output */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-primary">AI/ML Prediction Output</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Common Issues for Selected Crop */}
-                  <div>
-                    <h3 className="font-medium mb-3">Common {selectedCrop.name} Issues:</h3>
-                    <div className="space-y-3">
-                      {selectedCrop.diseases.length > 0 ? (
-                        selectedCrop.diseases.map((disease, index) => (
-                          <div key={index} className="flex space-x-3 p-3 border rounded-lg">
-                            <img
-                              src={disease.image}
-                              alt={disease.name}
-                              className="w-12 h-12 rounded object-cover"
-                            />
-                            <div>
-                              <h4 className="font-medium text-sm">{disease.name}</h4>
-                              <p className="text-xs text-muted-foreground">{disease.description}</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No common diseases data available for {selectedCrop.name}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Analysis Result */}
-                  {analysisResult && (
+                  {isAnalyzing && <LoadingReport />}
+                  {error && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-4 bg-primary/10 border border-primary/20 rounded-lg"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive"
                     >
-                      <h3 className="font-medium text-primary mb-2">Analysis Result:</h3>
-                      <p className="text-sm">{analysisResult}</p>
+                      <h3 className="font-medium mb-2">Error</h3>
+                      <p className="text-sm">{error}</p>
                     </motion.div>
+                  )}
+                  
+                  {analysisResult && analysisMetadata && !isAnalyzing && (
+                    <AnalysisReport analysis={analysisResult} metadata={analysisMetadata} />
+                  )}
+
+                  {!analysisResult && !error && !isAnalyzing && (
+                    <div>
+                      <h3 className="font-medium mb-3">Common {selectedCrop.name} Issues:</h3>
+                      <div className="space-y-3">
+                        {selectedCrop.diseases.length > 0 ? (
+                          selectedCrop.diseases.map((disease, index) => (
+                            <div key={index} className="flex space-x-3 p-3 border rounded-lg">
+                              <img
+                                src={disease.image}
+                                alt={disease.name}
+                                className="w-12 h-12 rounded object-cover"
+                              />
+                              <div>
+                                <h4 className="font-medium text-sm">{disease.name}</h4>
+                                <p className="text-xs text-muted-foreground">{disease.description}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No common diseases data available for {selectedCrop.name}</p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -562,12 +625,21 @@ const DiseaseDetector: React.FC = () => {
                   <CardTitle className="text-secondary">Advanced Results</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {analysisResult ? (
+                  {isAnalyzing && (
+                    <div className="space-y-4 animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                    </div>
+                  )}
+                  {analysisResult && !isAnalyzing && (
                     <div className="space-y-4">
                       <Badge className="bg-secondary hover:bg-secondary/90">Advanced Analysis Complete</Badge>
                       <p className="text-sm">{analysisResult}</p>
                     </div>
-                  ) : (
+                  )}
+                  {!analysisResult && !isAnalyzing && (
                     <p className="text-sm text-muted-foreground">Upload an image to see advanced analysis results</p>
                   )}
                 </CardContent>
@@ -634,12 +706,21 @@ const DiseaseDetector: React.FC = () => {
                   <CardTitle className="text-accent-foreground">Hyperspectral Analysis</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {analysisResult ? (
+                  {isAnalyzing && (
+                    <div className="space-y-4 animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                    </div>
+                  )}
+                  {analysisResult && !isAnalyzing && (
                     <div className="space-y-4">
                       <Badge className="bg-accent hover:bg-accent/90">Hyperspectral Complete</Badge>
                       <p className="text-sm">{analysisResult}</p>
                     </div>
-                  ) : (
+                  )}
+                  {!analysisResult && !isAnalyzing && (
                     <p className="text-sm text-muted-foreground">Upload a hyperspectral image to see detailed spectral analysis</p>
                   )}
                 </CardContent>

@@ -39,9 +39,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [translationCache, setTranslationCache] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('preferred-language');
-    if (savedLanguage) {
-      const language = languages.find(lang => lang.code === savedLanguage);
+    const user = JSON.parse(localStorage.getItem('agritech_current_user') || 'null');
+    if (user && user.language) {
+      const language = languages.find(lang => lang.code === user.language);
       if (language) {
         setCurrentLanguage(language);
       }

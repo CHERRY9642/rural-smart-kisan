@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage, languages } from "@/contexts/LanguageContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -286,18 +286,18 @@ const Settings = () => {
                     <div className="space-y-3">
                       <Label htmlFor="language">{translateSync('App Language')}</Label>
                       <Select
-                        value={settings.language}
-                        onValueChange={(value) => setSettings(prev => ({ ...prev, language: value }))}
+                        value={currentUser?.language || 'en'}
+                        disabled
                       >
                         <SelectTrigger>
                           <SelectValue placeholder={translateSync("Select language")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="kannada">ಕನ್ನಡ (Kannada)</SelectItem>
-                          <SelectItem value="hindi">हिन्दी (Hindi)</SelectItem>
-                          <SelectItem value="english">English</SelectItem>
-                          <SelectItem value="tamil">தமிழ் (Tamil)</SelectItem>
-                          <SelectItem value="telugu">తెలుగు (Telugu)</SelectItem>
+                          {languages.map((lang) => (
+                            <SelectItem key={lang.code} value={lang.code}>
+                              {lang.nativeName}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

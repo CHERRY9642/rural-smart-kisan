@@ -135,65 +135,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, isSidebarOpen }) =
 
         {/* Right section */}
         <div className="flex items-center space-x-2">
-          {/* Language Selector */}
-          <div className="relative hidden md:block" ref={languagesRef}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowLanguages(!showLanguages)}
-              className="text-xs gap-2 hover:bg-primary/10 transition-all duration-300"
-            >
+          {/* Language Display */}
+          <div className="relative hidden md:block">
+            <div className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
-              <span className="flex items-center gap-1">
-                {currentLanguage.flag} {currentLanguage.nativeName}
+              <span className="text-xs">
+                {currentLanguage.nativeName}
               </span>
-              <motion.div
-                animate={{ rotate: showLanguages ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDown className="h-3 w-3" />
-              </motion.div>
-            </Button>
-
-            {showLanguages && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="absolute right-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border p-2 z-50"
-              >
-                <div className="space-y-1">
-                  {languages.map((language, index) => (
-                    <motion.button
-                      key={language.code}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => {
-                        setLanguage(language);
-                        setShowLanguages(false);
-                      }}
-                      className={`w-full text-left p-3 rounded-md transition-all duration-200 flex items-center gap-3 hover:bg-primary/10 ${
-                        currentLanguage.code === language.code ? 'bg-primary/20 text-primary' : ''
-                      }`}
-                    >
-                      <span className="text-lg">{language.flag}</span>
-                      <div>
-                        <div className="font-medium">{language.nativeName}</div>
-                        <div className="text-xs text-muted-foreground">{language.name}</div>
-                      </div>
-                      {currentLanguage.code === language.code && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto w-2 h-2 bg-primary rounded-full"
-                        />
-                      )}
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+            </div>
           </div>
 
           {/* Notifications */}
@@ -278,18 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, isSidebarOpen }) =
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => {
-                      setShowLanguages(!showLanguages);
-                      setShowProfile(false);
-                    }}
-                  >
-                    <Globe className="h-4 w-4" />
-                    {t('Language')}: {currentLanguage.nativeName}
-                  </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
