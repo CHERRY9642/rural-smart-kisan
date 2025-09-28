@@ -16,6 +16,11 @@ export interface Scheme {
   targetState?: string;
 }
 
+export interface AnalysisResult {
+  analysis: string;
+}
+
+
 export interface HelpCenter {
   name: string;
   address: string;
@@ -241,6 +246,20 @@ class GovernmentSchemesService {
       !['about', 'tell', 'what', 'how', 'when', 'where', 'can', 'will', 'should'].includes(word)
     );
     return relevantKeywords;
+  }
+
+  async analyzeSchemes(formData: FormData): Promise<AnalysisResult> {
+    try {
+      const response = await axios.post('https://krishischemes-api.onrender.com/analyze', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error analyzing schemes:', error);
+      throw new Error('Failed to analyze schemes');
+    }
   }
 }
 
