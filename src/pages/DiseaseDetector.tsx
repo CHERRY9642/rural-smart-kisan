@@ -18,7 +18,7 @@ import {
   Brain,
   Globe
 } from 'lucide-react';
-import { useLanguage, languages } from '@/contexts/LanguageContext';
+import { useLanguage, languages } from '../contexts/LanguageContext';
 import AnalysisReport from '@/components/AnalysisReport';
 import LoadingReport from '@/components/LoadingReport';
 
@@ -112,7 +112,7 @@ const crops: Crop[] = [
 ];
 
 const DiseaseDetector: React.FC = () => {
-  const { translateSync, currentLanguage } = useLanguage();
+  const { currentLanguage } = useLanguage();
   const [mode, setMode] = useState<DetectorMode>('normal');
   const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -123,6 +123,10 @@ const DiseaseDetector: React.FC = () => {
   const [analysisMetadata, setAnalysisMetadata] = useState<Metadata | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>(currentLanguage.code);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // TODO: Replace with your actual API base URL
+  const API_BASE_URL = 'https://krishi-rakshak-2.onrender.com';
   
 
   const modeConfig = {
@@ -194,8 +198,9 @@ const DiseaseDetector: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedImage || !selectedCrop) return;
-    
+    if (!selectedImage) return;
+    if (mode === 'normal' && !selectedCrop) return;
+
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
@@ -203,7 +208,9 @@ const DiseaseDetector: React.FC = () => {
 
     const formData = new FormData();
     formData.append('image', selectedImage);
-    formData.append('crop_type', selectedCrop.name);
+    if (mode === 'normal' && selectedCrop) {
+      formData.append('crop_type', selectedCrop.name);
+    }
     formData.append('language', languages.find(l => l.code === selectedLanguage)?.name || 'English');
     formData.append('use_ai', 'true');
 
