@@ -1,0 +1,86 @@
+[plugin:vite:react-swc] × the name `weatherData` is defined multiple times
+    ╭─[C:/rural-smart-kisan/src/components/Dashboard.tsx:30:1]
+ 27 │ export const Dashboard: React.FC = () => {
+ 28 │   const navigate = useNavigate();
+ 29 │   const { translate, translateSync, currentLanguage } = useLanguage();
+ 30 │   const { weatherData, loading, error, refetch } = useWeather();
+    ·           ─────┬─────
+    ·                ╰── previous definition of `weatherData` here
+ 31 │   const { hasFeatureAccess, setPlan, currentPlan } = usePlan();
+ 32 │   const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
+ 33 │   const [currentUser, setCurrentUser] = useState<any>(null);
+ 34 │   const [useLiveLocation, setUseLiveLocation] = useState(false);
+ 35 │ 
+ 36 │   const { weatherData, loading, error, refetch } = useWeather(useLiveLocation);
+    ·           ─────┬─────
+    ·                ╰── `weatherData` redefined here
+ 37 │ 
+ 38 │   // Load user data and set plan
+ 39 │   useEffect(() => {
+    ╰────
+  × the name `loading` is defined multiple times
+    ╭─[C:/rural-smart-kisan/src/components/Dashboard.tsx:30:1]
+ 27 │ export const Dashboard: React.FC = () => {
+ 28 │   const navigate = useNavigate();
+ 29 │   const { translate, translateSync, currentLanguage } = useLanguage();
+ 30 │   const { weatherData, loading, error, refetch } = useWeather();
+    ·                        ───┬───
+    ·                           ╰── previous definition of `loading` here
+ 31 │   const { hasFeatureAccess, setPlan, currentPlan } = usePlan();
+ 32 │   const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
+ 33 │   const [currentUser, setCurrentUser] = useState<any>(null);
+ 34 │   const [useLiveLocation, setUseLiveLocation] = useState(false);
+ 35 │ 
+ 36 │   const { weatherData, loading, error, refetch } = useWeather(useLiveLocation);
+    ·                        ───┬───
+    ·                           ╰── `loading` redefined here
+ 37 │ 
+ 38 │   // Load user data and set plan
+ 39 │   useEffect(() => {
+    ╰────
+  × the name `error` is defined multiple times
+    ╭─[C:/rural-smart-kisan/src/components/Dashboard.tsx:30:1]
+ 27 │ export const Dashboard: React.FC = () => {
+ 28 │   const navigate = useNavigate();
+ 29 │   const { translate, translateSync, currentLanguage } = useLanguage();
+ 30 │   const { weatherData, loading, error, refetch } = useWeather();
+    ·                                 ──┬──
+    ·                                   ╰── previous definition of `error` here
+ 31 │   const { hasFeatureAccess, setPlan, currentPlan } = usePlan();
+ 32 │   const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
+ 33 │   const [currentUser, setCurrentUser] = useState<any>(null);
+ 34 │   const [useLiveLocation, setUseLiveLocation] = useState(false);
+ 35 │ 
+ 36 │   const { weatherData, loading, error, refetch } = useWeather(useLiveLocation);
+    ·                                 ──┬──
+    ·                                   ╰── `error` redefined here
+ 37 │ 
+ 38 │   // Load user data and set plan
+ 39 │   useEffect(() => {
+    ╰────
+  × the name `refetch` is defined multiple times
+    ╭─[C:/rural-smart-kisan/src/components/Dashboard.tsx:30:1]
+ 27 │ export const Dashboard: React.FC = () => {
+ 28 │   const navigate = useNavigate();
+ 29 │   const { translate, translateSync, currentLanguage } = useLanguage();
+ 30 │   const { weatherData, loading, error, refetch } = useWeather();
+    ·                                        ───┬───
+    ·                                           ╰── previous definition of `refetch` here
+ 31 │   const { hasFeatureAccess, setPlan, currentPlan } = usePlan();
+ 32 │   const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
+ 33 │   const [currentUser, setCurrentUser] = useState<any>(null);
+ 34 │   const [useLiveLocation, setUseLiveLocation] = useState(false);
+ 35 │ 
+ 36 │   const { weatherData, loading, error, refetch } = useWeather(useLiveLocation);
+    ·                                        ───┬───
+    ·                                           ╰── `refetch` redefined here
+ 37 │ 
+ 38 │   // Load user data and set plan
+ 39 │   useEffect(() => {
+    ╰────
+C:/rural-smart-kisan/src/components/Dashboard.tsx:30:1
+230|              🌤️ {t('Weather Daily Forecast')}
+231|              <motion.div
+232|                animate={{ rotate: 360 }}
+   |                     ^
+233|                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}

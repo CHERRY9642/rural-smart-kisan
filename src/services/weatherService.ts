@@ -1,10 +1,12 @@
 import axios from 'axios';
 
 // OpenWeatherMap API configuration
-const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+const API_KEY = "9afd8abc3856f72416463be47783bca4";
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+const GEO_URL = 'https://api.openweathermap.org/geo/1.0';
 
 export interface WeatherData {
+  location: string;
   current: {
     temp: number;
     humidity: number;
@@ -36,6 +38,7 @@ export interface WeatherData {
 
 // Mock weather data for demo purposes (fallback when API key is not available)
 const mockWeatherData: WeatherData = {
+  location: 'Mock Location',
   current: {
     temp: 28,
     humidity: 65,
@@ -155,13 +158,21 @@ const mapWeatherCondition = (icon: string): string => {
   return iconMap[icon] || 'partly-cloudy';
 };
 
+export const getCoordsFromLocation = async (district: string, state: string): Promise<{ lat: number; lon: number } | null> => {
+  try {
+    const response = await axios.get(`${GEO_URL}/direct?q=${district},${state},IN&limit=1&appid=${API_KEY}`);
+    if (response.data && response.data.length > 0) {
+      return { lat: response.data[0].lat, lon: response.data[0].lon };
+    }
+    return null;
+  } catch (error) {
+    console.error("Geocoding API error:", error);
+    return null;
+  }
+};
+
 export const fetchWeatherData = async (lat: number = 12.9716, lon: number = 77.5946): Promise<WeatherData> => {
   try {
-    // Check if API key is the placeholder and throw an error if it is.
-    if (API_KEY === "YOUR_API_KEY_HERE" || API_KEY === "demo") {
-      throw new Error("Please configure your OpenWeatherMap API key. Get it from https://openweathermap.org/api");
-    }
-
     // Fetch current weather
     const currentResponse = await axios.get(
       `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
@@ -179,6 +190,7 @@ export const fetchWeatherData = async (lat: number = 12.9716, lon: number = 77.5
     const lightIntensity = calculateLightIntensity(current.clouds.all, currentHour);
 
     const weatherData: WeatherData = {
+      location: current.name,
       current: {
         temp: Math.round(current.main.temp),
         humidity: current.main.humidity,

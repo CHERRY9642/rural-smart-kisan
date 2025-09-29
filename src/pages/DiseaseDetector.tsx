@@ -31,6 +31,8 @@ import tomatoImage from '@/assets/crops/tomato.jpg';
 import onionImage from '@/assets/crops/onion.jpg';
 import potatoImage from '@/assets/crops/potato.jpg';
 import grapesImage from '@/assets/crops/grapes.jpg';
+import wheatImage from '@/assets/commodities/wheat.jpg';
+import pulsesImage from '@/assets/commodities/beans.jpg';
 
 // Import disease reference images
 import riceBlightImage from '@/assets/diseases/rice-blight.jpg';
@@ -59,7 +61,7 @@ const crops: Crop[] = [
   {
     id: 'wheat',
     name: 'Wheat',
-    image: '/src/assets/commodities/wheat.jpg',
+    image: wheatImage,
     diseases: [
       { name: 'Leaf Rust', image: riceBlightImage, description: 'Orange-red pustules on leaf surfaces' },
       { name: 'Powdery Mildew', image: tomatoBlightImage, description: 'White powdery coating on leaves' }
@@ -95,11 +97,17 @@ const crops: Crop[] = [
   {
     id: 'pulses',
     name: 'Pulses',
-    image: '/src/assets/commodities/beans.jpg',
+    image: pulsesImage,
     diseases: [
       { name: 'Pod Borer', image: cottonBollwormImage, description: 'Damage to developing pods' },
       { name: 'Wilt Disease', image: tomatoBlightImage, description: 'Wilting and yellowing of plants' }
     ]
+  },
+  {
+    id: 'other',
+    name: 'Other',
+    image: '/placeholder.svg',
+    diseases: []
   }
 ];
 
@@ -115,33 +123,7 @@ const DiseaseDetector: React.FC = () => {
   const [analysisMetadata, setAnalysisMetadata] = useState<Metadata | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>(currentLanguage.code);
-  const [apiStatus, setApiStatus] = useState<string>('Checking API status...');
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const API_BASE_URL = 'https://krishi-rakshak-2.onrender.com';
-
-  useEffect(() => {
-    const checkAPIStatus = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/health`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        if (data.status === 'healthy') {
-          setApiStatus(`✅ API is healthy | Gemini Available: ${data.gemini_available}`);
-        } else {
-          setApiStatus('⚠ API is running but health check failed');
-        }
-      } catch (error) {
-        console.error('API Status Error:', error);
-        setApiStatus('❌ Cannot connect to API');
-      }
-    };
-    checkAPIStatus();
-    const interval = setInterval(checkAPIStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  
 
   const modeConfig = {
     normal: { icon: Brain, label: 'Normal', color: 'bg-primary' },
@@ -286,7 +268,7 @@ const DiseaseDetector: React.FC = () => {
           >
             Identify and diagnose crop diseases using advanced AI technology. Upload images of your crops to get instant analysis and treatment recommendations.
           </motion.p>
-          <Badge variant="outline">{apiStatus}</Badge>
+          
         </motion.div>
 
         <Card>

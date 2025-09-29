@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/Layout';
@@ -20,7 +19,6 @@ import {
 } from 'lucide-react';
 
 const RECOMMEND_API = "https://krishirecommend-api.onrender.com/recommend";
-const HEALTH_API = "https://krishirecommend-api.onrender.com/health";
 
 const CropRecommendation = () => {
   const { toast } = useToast();
@@ -38,28 +36,30 @@ const CropRecommendation = () => {
   });
   const [recommendation, setRecommendation] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [cropSchedule, setCropSchedule] = useState<any>(null);
+  const [crops, setCrops] = useState<any[]>([]);
+  const [filteredCrops, setFilteredCrops] = useState<any[]>([]);
+  const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [activeSchedule, setActiveSchedule] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAPIStatus = async () => {
-      try {
-        const response = await fetch(HEALTH_API);
-        const data = await response.json();
-        if (data.status === 'healthy') {
-          setApiStatus(`✅ API Connected | Model: ${data.model_loaded ? 'Loaded' : 'Not Loaded'}`);
-        } else {
-          setApiStatus('⚠️ API Issues - Check connection');
-        }
-      } catch (error) {
-        setApiStatus('❌ API Offline - Please check deployment');
-      }
-    };
-    checkAPIStatus();
-  }, []);
+    fetch('/crops.json')
+      .then(response => response.json())
+      .then(data => {
+        setCrops(data.crops);
+        setFilteredCrops(data.crops);
+      })
+      .catch(error => {
+        console.error("Failed to fetch crops data:", error);
+        toast({
+          title: "Error",
+          description: "Could not load crop schedule data.",
+          variant: "destructive"
+        });
+      });
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target as HTMLInputElement;
@@ -130,73 +130,64 @@ const CropRecommendation = () => {
     }
   };
 
-  const handleScheduleSearch = () => {
-    if (!searchQuery) {
-      toast({
-        title: "Missing information",
-        description: "Please enter a crop name",
-        variant: "destructive"
-      });
-      return;
+  const handleScheduleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query) {
+      const filtered = crops.filter(crop => crop.name.toLowerCase().includes(query.toLowerCase()));
+      setFilteredCrops(filtered);
+    } else {
+      setFilteredCrops(crops);
     }
-
-    setScheduleLoading(true);
-    setTimeout(() => {
-      const schedule = getCropPlan(searchQuery.toLowerCase());
-      setCropSchedule(schedule);
-      setScheduleLoading(false);
-      toast({
-        title: "Schedule retrieved",
-        description: `Displaying schedule for ${searchQuery}`
-      });
-    }, 1500);
+    setSelectedCrop(null);
   };
 
-  const getCropPlan = (cropName: string) => {
-    const plans: Record<string, any> = {
-      wheat: {
-        timeline: [
-          { phase: 'Land Preparation', duration: '15-20 days', activity: 'Plowing, harrowing, leveling' },
-          { phase: 'Sowing', duration: '7-10 days', activity: 'Seed sowing with proper spacing' },
-        ],
-        treatments: [
-          { type: 'Basal Fertilizer', timing: 'At sowing', application: 'NPK 120:60:40 kg/hectare' },
-        ],
-        yield: '40-45 Q/Ha',
-        revenue: '₹80,000-₹90,000/Ha',
-        tips: [
-          'Maintain soil moisture during critical growth stages',
-        ]
-      },
-      rice: {
-        timeline: [
-            { phase: 'Nursery Preparation', duration: '25-30 days', activity: 'Seed bed preparation and sowing' },
-        ],
-        treatments: [
-            { type: 'Basal Fertilizer', timing: 'Before transplanting', application: 'NPK 120:60:40 kg/hectare' },
-        ],
-        yield: '60-70 Q/Ha',
-        revenue: '₹1,20,000-₹1,40,000/Ha',
-        tips: [
-            'Maintain 2-5 cm water level throughout growth',
-        ]
-      },
-      tomato: {
-        timeline: [
-            { phase: 'Nursery', duration: '25-30 days', activity: 'Seed sowing in protected conditions' },
-        ],
-        treatments: [
-            { type: 'Organic Manure', timing: 'Land preparation', application: '25-30 tonnes FYM/hectare' },
-        ],
-        yield: '500-600 Q/Ha',
-        revenue: '₹3,00,000-₹4,50,000/Ha',
-        tips: [
-            'Provide support stakes within 15 days of transplanting',
-        ]
-      }
-    };
-    return plans[cropName] || plans.wheat;
+  const handleCropSelect = (crop: any) => {
+    setSelectedCrop(crop);
+    setSearchQuery(crop.name);
+    setFilteredCrops([]);
   };
+
+  const formatDate = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  };
+
+  const renderSchedule = (schedule: any[], title: string) => (
+    <div>
+      <h2 className="text-xl font-semibold text-blue-900 mb-2">{title}</h2>
+      <div className="space-y-4">
+        {schedule.map((item, index) => (
+          <div 
+            key={index} 
+            className="bg-blue-100 hover:scale-105 hover:shadow-lg transition transform duration-300 rounded-lg p-4 cursor-pointer flex items-start space-x-4"
+            onClick={() => setActiveSchedule(activeSchedule === `${title}-${index}` ? null : `${title}-${index}`)}
+          >
+            <div className="flex-shrink-0">
+              <div className="bg-blue-500 text-white w-12 h-12 flex items-center justify-center rounded-full text-sm font-bold animate-pulse">
+                {item.days_after_planting}d
+              </div>
+              <div className="mt-1 text-xs text-center">📅 {formatDate(item.days_after_planting)}</div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-blue-900 font-semibold">{item.stage}</h3>
+              <p className="text-sm text-gray-700">{item.application}</p>
+              {activeSchedule === `${title}-${index}` && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="extra-info mt-2 bg-blue-50 p-3 rounded-lg border text-sm text-gray-600"
+                >
+                  {item.extra_info || 'No additional info available.'}
+                </motion.div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <Layout>
@@ -211,7 +202,6 @@ const CropRecommendation = () => {
             <Leaf className="h-10 w-10" />
             Crop Recommendation & Scheduling
           </h1>
-          {apiStatus && <Badge variant="outline">{apiStatus}</Badge>}
         </motion.div>
 
         <Tabs value={activeMode} onValueChange={(mode) => setActiveMode(mode as string)} className="w-full">
@@ -336,70 +326,59 @@ const CropRecommendation = () => {
           </TabsContent>
 
           <TabsContent value="scheduling">
-            <Card>
-              <CardHeader>
-                <CardTitle>Search Crop Schedule</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex w-full max-w-sm items-center space-x-2">
-                  <Input
-                    type="text"
-                    placeholder="e.g., Wheat, Rice, Tomato"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <Button type="submit" onClick={handleScheduleSearch} disabled={scheduleLoading}>
-                    {scheduleLoading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />} 
-                    Search
-                  </Button>
-                </div>
-
-                {scheduleLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-8 w-8 animate-spin text-green-600" />
-                    <span className="ml-2">Fetching schedule...</span>
-                  </div>
-                ) : cropSchedule ? (
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 pt-4">
-                    <h3 className="text-xl font-semibold">Schedule for {searchQuery}</h3>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Timeline</h4>
-                      <ul className="list-disc list-inside space-y-1">
-                        {cropSchedule.timeline.map((item: any, index: number) => (
-                          <li key={index}><strong>{item.phase}</strong> ({item.duration}): {item.activity}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Treatments</h4>
-                      <ul className="list-disc list-inside space-y-1">
-                        {cropSchedule.treatments.map((item: any, index: number) => (
-                          <li key={index}><strong>{item.type}</strong> ({item.timing}): {item.application}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Yield & Revenue</h4>
-                      <p><strong>Yield:</strong> {cropSchedule.yield}</p>
-                      <p><strong>Revenue:</strong> {cropSchedule.revenue}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Tips</h4>
-                      <ul className="list-disc list-inside space-y-1">
-                        {cropSchedule.tips.map((tip: string, index: number) => (
-                          <li key={index}>{tip}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>Search for a crop to see its detailed schedule.</p>
-                  </div>
+            <div className="w-full bg-white rounded-xl shadow-xl p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-4">🌿 Crop Scheduler</h1>
+              
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search for a crop..."
+                  value={searchQuery}
+                  onChange={handleScheduleSearch}
+                  className="w-full mb-2"
+                />
+                {searchQuery && filteredCrops.length > 0 && (
+                  <Card className="absolute z-10 w-full mt-1">
+                    <CardContent className="p-2">
+                      {filteredCrops.map(crop => (
+                        <div 
+                          key={crop.name} 
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleCropSelect(crop)}
+                        >
+                          {crop.name}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+
+              {scheduleLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-8 w-8 animate-spin text-green-600" />
+                  <span className="ml-2">Loading...</span>
+                </div>
+              ) : selectedCrop ? (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 pt-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p><strong>Crop:</strong> {selectedCrop.name}</p>
+                    <p><strong>Season:</strong> {selectedCrop.season}</p>
+                    <p><strong>Sowing Period:</strong> {selectedCrop.sowing_period}</p>
+                    <p><strong>Harvest Period:</strong> {selectedCrop.harvest_period}</p>
+                  </div>
+                  {renderSchedule(selectedCrop.fertilizer_schedule, 'Fertilizer Schedule')}
+                  <div className="mt-6">
+                    {renderSchedule(selectedCrop.pesticide_schedule, 'Pesticide Schedule')}
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Search for a crop to see its detailed schedule.</p>
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -27,10 +27,11 @@ import {
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { translate, translateSync, currentLanguage } = useLanguage();
-  const { weatherData, loading, error, refetch } = useWeather();
   const { hasFeatureAccess, setPlan, currentPlan } = usePlan();
   const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const { weatherData, loading, error, refetch } = useWeather();
 
   // Load user data and set plan
   useEffect(() => {
@@ -224,7 +225,7 @@ export const Dashboard: React.FC = () => {
         {/* Header with Refresh */}
         <div className="flex items-center justify-between">
           <h2 className="text-section-title text-primary font-indian flex items-center gap-2">
-            🌤️ {t('Weather Daily Forecast')}
+            🌤️ {t('Weather Daily Forecast')} {weatherData && `- ${weatherData.location}`}
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
