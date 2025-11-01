@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,6 +116,7 @@ const GroceryMarketplace = () => {
   // Common states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedState, setSelectedState] = useState('All');
   
   // Grocery states
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -140,6 +141,13 @@ const GroceryMarketplace = () => {
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('agritech_current_user') || 'null');
+    if (user && user.defaultState) {
+      setSelectedState(user.defaultState);
+    }
+  }, []);
 
   // Artifacts states
   const [showAddArtifact, setShowAddArtifact] = useState(false);
@@ -242,6 +250,82 @@ const GroceryMarketplace = () => {
       likesCount: 32,
       savesCount: 28,
       feedback: []
+    },
+    {
+      id: '5',
+      name: 'Guntur Chilies',
+      price: 250,
+      unit: 'kg',
+      quantity: 80,
+      seller: 'Andhra Spice Co.',
+      location: 'Guntur, Andhra Pradesh',
+      rating: 4.8,
+      images: [{ id: 'chilli-1', url: '🌶️', alt: 'Guntur Chilies' }],
+      description: 'World-famous Guntur chilies, known for their heat and flavor.',
+      category: 'spices',
+      freshness: 'Excellent',
+      postedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      isOrganic: false,
+      likesCount: 45,
+      savesCount: 30,
+      feedback: []
+    },
+    {
+      id: '6',
+      name: 'Kurnool Rice',
+      price: 60,
+      unit: 'kg',
+      quantity: 120,
+      seller: 'Rayalaseema Farmers',
+      location: 'Kurnool, Andhra Pradesh',
+      rating: 4.6,
+      images: [{ id: 'rice-2', url: '🌾', alt: 'Kurnool Rice' }],
+      description: 'High-quality Sona Masoori rice from the Kurnool region.',
+      category: 'grains',
+      freshness: 'Excellent',
+      postedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
+      isOrganic: false,
+      likesCount: 30,
+      savesCount: 22,
+      feedback: []
+    },
+    {
+      id: '7',
+      name: 'Ooty Apples',
+      price: 180,
+      unit: 'kg',
+      quantity: 40,
+      seller: 'Nilgiri Orchards',
+      location: 'Ooty, Tamil Nadu',
+      rating: 4.9,
+      images: [{ id: 'apple-1', url: '🍎', alt: 'Ooty Apples' }],
+      description: 'Crisp and juicy apples from the hills of Ooty.',
+      category: 'fruits',
+      freshness: 'Very Fresh',
+      postedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+      isOrganic: true,
+      likesCount: 55,
+      savesCount: 40,
+      feedback: []
+    },
+    {
+      id: '8',
+      name: 'Madurai Jasmine',
+      price: 500,
+      unit: 'kg',
+      quantity: 10,
+      seller: 'Jasmine Growers Assn.',
+      location: 'Madurai, Tamil Nadu',
+      rating: 4.9,
+      images: [{ id: 'jasmine-1', url: '🌸', alt: 'Madurai Jasmine' }],
+      description: 'Fragrant Madurai Malli (Jasmine) with a unique aroma.',
+      category: 'flowers',
+      freshness: 'Very Fresh',
+      postedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+      isOrganic: true,
+      likesCount: 60,
+      savesCount: 50,
+      feedback: []
     }
   ]);
 
@@ -306,7 +390,8 @@ const GroceryMarketplace = () => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.seller.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesState = selectedState === 'All' || product.location.toLowerCase().includes(selectedState.toLowerCase());
+    return matchesSearch && matchesCategory && matchesState;
   });
 
   const filteredArtifacts = artifacts.filter(artifact => {
@@ -677,6 +762,17 @@ const GroceryMarketplace = () => {
                     className="pl-10"
                   />
                 </div>
+                <Select value={selectedState} onValueChange={setSelectedState}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select a state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All States</SelectItem>
+                    <SelectItem value="Karnataka">Karnataka</SelectItem>
+                    <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                    <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                  </SelectContent>
+                </Select>
                 
                 <div className="flex space-x-2">
                   <Button onClick={() => setShowOrders(true)} variant="outline">

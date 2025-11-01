@@ -46,7 +46,8 @@ const Settings = () => {
     location: {
       autoDetect: true,
       city: 'Bangalore',
-      state: 'Karnataka'
+      state: 'Karnataka',
+      defaultState: 'Karnataka'
     },
     profile: {
       name: 'Farmer Krishna',
@@ -510,6 +511,26 @@ const Settings = () => {
                       </div>
                     </div>
                   )}
+                  <Separator />
+                  <div className="space-y-2">
+                        <Label htmlFor="defaultState">{translateSync('Default Marketplace State')}</Label>
+                        <Select
+                          value={settings.location.defaultState}
+                          onValueChange={(value) => setSettings(prev => ({
+                            ...prev,
+                            location: { ...prev.location, defaultState: value }
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={translateSync("Select a default state")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Karnataka">Karnataka</SelectItem>
+                            <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                            <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                 </CardContent>
               </Card>
             </motion.div>

@@ -332,7 +332,14 @@ const DiseaseDetector: React.FC = () => {
                       <motion.button
                         key={crop.id}
                         className="p-2 sm:p-3 border rounded-lg hover:border-primary transition-colors"
-                        onClick={() => setSelectedCrop(crop)}
+                        onClick={() => {
+                          if (crop.id === 'other') {
+                            setMode('advanced');
+                            setSelectedCrop(null);
+                          } else {
+                            setSelectedCrop(crop);
+                          }
+                        }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
