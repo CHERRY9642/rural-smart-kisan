@@ -25,6 +25,7 @@ import LoadingReport from '@/components/LoadingReport';
 // Import crop images
 import riceImage from '@/assets/crops/rice.jpg';
 import cottonImage from '@/assets/crops/cotton.jpg';
+import sugarcane from '@/assets/crops/sugarcane.png';
 import hotpepperImage from '@/assets/crops/hotpepper.jpg';
 import cornImage from '@/assets/crops/corn.jpg';
 import tomatoImage from '@/assets/crops/tomato.jpg';
@@ -79,7 +80,7 @@ const crops: Crop[] = [
   {
     id: 'sugarcane',
     name: 'Sugarcane',
-    image: cornImage,
+    image: sugarcane,
     diseases: [
       { name: 'Red Rot', image: tomatoBlightImage, description: 'Reddish discoloration in stem' },
       { name: 'Smut Disease', image: cornSpotImage, description: 'Black spore masses on shoots' }
