@@ -16,6 +16,33 @@ npm run dev
 
 The API starts on `http://localhost:4000` by default. Tables are created automatically on startup.
 
+## Render Backend Deploy
+
+Use these settings for a Render Web Service:
+
+```txt
+Root Directory: backend
+Build Command: npm install && npm run build
+Start Command: npm start
+```
+
+Render environment variables:
+
+```env
+NODE_ENV=production
+DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres
+JWT_SECRET=<long-random-secret>
+JWT_EXPIRES_IN=7d
+FRONTEND_ORIGIN=https://your-vercel-frontend-url.vercel.app
+SENSOR_API_BASE=https://render-syo4.onrender.com
+DISEASE_API_BASE=https://krishi-rakshak-2.onrender.com
+CROP_RECOMMEND_API=https://krishirecommend-api.onrender.com/recommend
+OPENWEATHER_API_KEY=<your-openweather-key>
+DATA_GOV_API_KEY=<your-data-gov-key>
+```
+
+Do not set `PORT` on Render. Render provides it automatically.
+
 ## Seed Demo Data
 
 ```bash

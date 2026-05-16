@@ -1,9 +1,24 @@
 import pg from "pg";
 import { config } from "./config.js";
 
+const getDatabaseUrl = () => {
+  if (!config.databaseUrl.includes("supabase.co")) {
+    return config.databaseUrl;
+  }
+
+  const url = new URL(config.databaseUrl);
+  url.searchParams.delete("sslmode");
+  url.searchParams.delete("sslcert");
+  url.searchParams.delete("sslkey");
+  url.searchParams.delete("sslrootcert");
+  return url.toString();
+};
+
+const databaseUrl = getDatabaseUrl();
+
 export const pool = new pg.Pool({
-  connectionString: config.databaseUrl,
-  ssl: config.databaseUrl.includes("supabase.co")
+  connectionString: databaseUrl,
+  ssl: databaseUrl.includes("supabase.co")
     ? { rejectUnauthorized: false }
     : undefined
 });
