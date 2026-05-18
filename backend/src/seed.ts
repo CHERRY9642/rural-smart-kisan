@@ -18,7 +18,7 @@ type SeedUser = {
 const users: SeedUser[] = [
   {
     name: "Farmer One",
-    email: "former1@example.com",
+    email: "farmer1@example.com",
     password: "Charan@9642",
     phone: "9876543210",
     state: "Karnataka",
@@ -226,9 +226,9 @@ const seed = async () => {
   await query("create unique index if not exists cold_storage_seed_identity on cold_storage_requests (user_id, farmer_name, produce_type, estimated_quantity, preferred_duration)");
   await query(
     `update users
-     set email = 'former1@example.com', updated_at = now()
-     where email = 'former1@eample.com'
-       and not exists (select 1 from users where email = 'former1@example.com')`
+     set email = 'farmer1@example.com', updated_at = now()
+     where email in ('former1@eample.com', 'former1@example.com')
+       and not exists (select 1 from users where email = 'farmer1@example.com')`
   );
 
   const seededUsers = await Promise.all(users.map(upsertUser));
@@ -375,7 +375,7 @@ const seed = async () => {
       nearest_facility = excluded.nearest_facility,
       special_requirements = excluded.special_requirements,
       status = excluded.status`,
-    [demoUser.id, "Farmer One", "Bangalore Rural, Karnataka", "9876543210", "former1@example.com", "5 acres"]
+    [demoUser.id, "Farmer One", "Bangalore Rural, Karnataka", "9876543210", "farmer1@example.com", "5 acres"]
   );
 
   await query(
@@ -393,12 +393,12 @@ const seed = async () => {
       nearest_facility = excluded.nearest_facility,
       special_requirements = excluded.special_requirements,
       status = excluded.status`,
-    [demoUser.id, "Farmer One", "Bangalore Rural, Karnataka", "9876543210", "former1@example.com", "5 acres"]
+    [demoUser.id, "Farmer One", "Bangalore Rural, Karnataka", "9876543210", "farmer1@example.com", "5 acres"]
   );
 
   console.log("Seed completed");
   console.table(seededUsers);
-  console.log("Demo login: former1@example.com / Charan@9642");
+  console.log("Demo login: farmer1@example.com / Charan@9642");
 };
 
 seed()

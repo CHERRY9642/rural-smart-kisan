@@ -15,7 +15,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   frontendOrigins: (process.env.FRONTEND_ORIGIN ?? "http://localhost:8080,http://localhost:5173")
     .split(",")
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
     .filter(Boolean),
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET"),

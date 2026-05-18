@@ -30,7 +30,7 @@ Render environment variables:
 
 ```env
 NODE_ENV=production
-DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres
+DATABASE_URL=<your Supabase Transaction Pooler connection string>
 JWT_SECRET=<long-random-secret>
 JWT_EXPIRES_IN=7d
 FRONTEND_ORIGIN=https://your-vercel-frontend-url.vercel.app
@@ -43,6 +43,16 @@ DATA_GOV_API_KEY=<your-data-gov-key>
 
 Do not set `PORT` on Render. Render provides it automatically.
 
+Use the Supabase pooler URL on Render, not the direct database URL. Render may not reach Supabase's IPv6-only direct database host and can fail with `ENETUNREACH`.
+
+In Supabase, open **Project Settings > Database > Connection string > Transaction pooler** and copy the URI. It usually looks like:
+
+```txt
+postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres
+```
+
+If your password contains `@`, encode it as `%40`.
+
 ## Seed Demo Data
 
 ```bash
@@ -51,7 +61,7 @@ npm run seed
 
 Demo login:
 
-- Email: `former1@example.com`
+- Email: `farmer1@example.com`
 - Password: `Charan@9642`
 
 ## Main Routes
