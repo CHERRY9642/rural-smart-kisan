@@ -16,13 +16,13 @@ const hasApiKey = () => {
 };
 
 export const translateText = async (
-  text: string, 
-  targetLanguage: string, 
+  text: string,
+  targetLanguage: string,
   sourceLanguage: string = 'en'
 ): Promise<string> => {
   try {
     if (!hasApiKey()) return text;
-  
+
 
     const response = await axios.post(`${TRANSLATION_API_URL}?key=${API_KEY}`, {
       q: text,
@@ -40,13 +40,13 @@ export const translateText = async (
 };
 
 export const translateMultipleTexts = async (
-  texts: string[], 
-  targetLanguage: string, 
+  texts: string[],
+  targetLanguage: string,
   sourceLanguage: string = 'en'
 ): Promise<string[]> => {
   try {
     if (!hasApiKey()) return texts;
-  
+
 
     const response = await axios.post(`${TRANSLATION_API_URL}?key=${API_KEY}`, {
       q: texts,
@@ -66,7 +66,7 @@ export const translateMultipleTexts = async (
 export const detectLanguage = async (text: string): Promise<string> => {
   try {
     if (!hasApiKey()) return 'en';
-  
+
 
     const response = await axios.post(`https://translation.googleapis.com/language/detect/v2?key=${API_KEY}`, {
       q: text
